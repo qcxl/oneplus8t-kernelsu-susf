@@ -347,6 +347,11 @@ EOF
         sed -i '/dsi_[a-zA-Z0-9_]*\.o/d' techpack/display/msm/dsi/Makefile
     fi
 
+    # Also remove the source file itself as a fallback
+    if [ -f "techpack/display/msm/dsi/dsi_display.c" ]; then
+        mv techpack/display/msm/dsi/dsi_display.c techpack/display/msm/dsi/dsi_display.c.bak
+    fi
+
     make -j$(nproc) O=out ARCH=arm64 CROSS_COMPILE=aarch64-linux-gnu- Image.gz dtbs modules
 
     cd ..
