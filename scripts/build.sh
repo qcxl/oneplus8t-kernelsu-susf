@@ -16,7 +16,7 @@ KERNEL_BRANCH="lineage-20"
 KSU_REPO="https://github.com/SukiSU-Ultra/SukiSU-Ultra.git"
 KSU_BRANCH="builtin"
 SUSFS_REPO="https://gitlab.com/simonpunk/susfs4ksu.git"
-SUSFS_BRANCH="kernel-4.19"
+SUSFS_BRANCH="master"
 DEVICE="kebab"
 OUTPUT_DIR="$(pwd)/output"
 
@@ -42,7 +42,6 @@ log_error() {
 check_dependencies() {
     log_info "Checking dependencies..."
 
-    # Check for required tools
     local missing_deps=()
 
     if ! command -v git &> /dev/null; then
@@ -95,7 +94,7 @@ clone_ksu() {
 }
 
 clone_susfs() {
-    log_info "Cloning SUSFS (kernel-4.19 branch)..."
+    log_info "Cloning SUSFS (master branch)..."
     if [ ! -d "susfs" ]; then
         git clone --depth 1 -b "$SUSFS_BRANCH" "$SUSFS_REPO" susfs
     else
@@ -115,18 +114,47 @@ apply_patches() {
 
     # Apply SUSFS patch
     log_info "Applying SUSFS patch..."
+
+    # Apply SUSFS kernel 4.19 integration patch first (adds VFS hooks)
     if [ -f "../susfs/kernel_patches/50_add_susfs_in_kernel-4.19.patch" ]; then
         cp ../susfs/kernel_patches/50_add_susfs_in_kernel-4.19.patch .
         patch -p1 < 50_add_susfs_in_kernel-4.19.patch || true
     fi
 
-    # Copy SUSFS source files
-    if [ -f "../susfs/fs/susfs.c" ]; then
-        cp ../susfs/fs/susfs.c fs/
+    # Ensure susfs.o is in fs/Makefile (in case patch was already applied)
+    if [ -f "fs/Makefile" ] && ! grep -q "susfs.o" fs/Makefile; then
+        echo 'obj-$(CONFIG_KSU_SUSFS) += susfs.o' >> fs/Makefile
     fi
 
-    if [ -f "../susfs/include/linux/susfs.h" ]; then
-        cp ../susfs/include/linux/susfs.h include/linux/
+    # Apply KernelSU SUSFS compatibility patch
+    if [ -f "../susfs/kernel_patches/KernelSU/10_enable_susfs_for_ksu.patch" ]; then
+        cp ../susfs/kernel_patches/KernelSU/10_enable_susfs_for_ksu.patch .
+        patch -p1 < 10_enable_susfs_for_ksu.patch || true
+    fi
+
+    # Copy SUSFS source files
+    if [ -f "../susfs/kernel_patches/fs/susfs.c" ]; then
+        cp ../susfs/kernel_patches/fs/susfs.c fs/
+    fi
+
+    if [ -f "../susfs/kernel_patches/include/linux/susfs.h" ]; then
+        cp ../susfs/kernel_patches/include/linux/susfs.h include/linux/
+    fi
+
+    # Copy SUSFS compatibility files
+    if [ -f "../kernel-patches/susfs_compat.h" ]; then
+        cp ../kernel-patches/susfs_compat.h include/linux/
+    fi
+    if [ -f "../kernel-patches/susfs_compat.c" ]; then
+        cp ../kernel-patches/susfs_compat.c fs/
+    fi
+    if [ -f "../kernel-patches/susfs_def.h" ]; then
+        cp ../kernel-patches/susfs_def.h include/linux/
+    fi
+
+    # Add susfs_compat.o to fs/Makefile (after susfs.o to ensure correct link order)
+    if [ -f "fs/Makefile" ]; then
+        echo 'obj-$(CONFIG_KSU_SUSFS) += susfs_compat.o' >> fs/Makefile
     fi
 
     cd ..
@@ -140,9 +168,12 @@ configure_kernel() {
     cd kernel
 
     # Load default config
-    make O=out ARCH=arm64 CROSS_COMPILE=aarch64-linux-gnu- "$DEVICE"_defconfig
+    make O=out ARCH=arm64 CROSS_COMPILE=aarch64-linux-gnu- vendor/kona-perf_defconfig
 
-    # Enable KernelSU
+    # Merge KSU config
+    scripts/kconfig/merge_config.sh -m -O out out/.config ../kernel-patches/ksu.config || true
+
+    # Manually add required configs (fallback if merge_config fails)
     echo "CONFIG_KSU=y" >> out/.config
     echo "CONFIG_KSU_SUSFS=y" >> out/.config
     echo "CONFIG_KSU_SUSFS_HAS_MAGIC_MOUNT=y" >> out/.config
@@ -154,6 +185,11 @@ configure_kernel() {
     echo "CONFIG_KSU_MANUAL_HOOK=y" >> out/.config
     echo "CONFIG_KSU_ALLOWLIST_MODE=y" >> out/.config
     echo "CONFIG_KSU_VERIFY_SUSFS=y" >> out/.config
+    echo "CONFIG_KSU_SUSFS_SUS_MAPS=y" >> out/.config
+    echo "CONFIG_KSU_SUSFS_SPOOF_UNAME=y" >> out/.config
+    echo "CONFIG_KSU_SUSFS_SUS_PROC_FD_LINK=y" >> out/.config
+    echo "CONFIG_KSU_SUSFS_TRY_UMOUNT=y" >> out/.config
+    echo "CONFIG_KSU_SUSFS_ENABLE_LOG=y" >> out/.config
 
     # Disable KPM for non-GKI
     echo "CONFIG_KPM=n" >> out/.config
@@ -171,11 +207,22 @@ build_kernel() {
 
     cd kernel
 
-    # Build kernel image
-    make -j$(nproc) O=out ARCH=arm64 CROSS_COMPILE=aarch64-linux-gnu- Image.gz dtbs
+    # Remove -mgeneral-regs-only and -Werror from all Makefiles (compatibility with newer GCC)
+    find . -type f \( -name "Makefile" -o -name "Kconfig*" -o -name "*.mk" \) -exec sed -i 's/-mgeneral-regs-only//g' {} +
+    find . -type f -name "Makefile" -exec sed -i 's/-Werror//g' {} +
+    find . -type f -name "Makefile" -exec sed -i 's/-Werror-implicit-function-declaration//g' {} +
+    find . -type f -name "Makefile" -exec sed -i 's/-Werror=return-type//g' {} +
+    find . -type f -name "Makefile" -exec sed -i 's/-Werror=implicit-int//g' {} +
+    find . -type f -name "Makefile" -exec sed -i 's/-Werror=strict-prototypes//g' {} +
+    find . -type f -name "Makefile" -exec sed -i 's/-Werror=date-time//g' {} +
+    find . -type f -name "Makefile" -exec sed -i 's/-Werror=incompatible-pointer-types//g' {} +
+    find . -type f -name "Makefile" -exec sed -i 's/-Werror=designated-init//g' {} +
+    find . -type f -name "Makefile" -exec sed -i 's/-Werror=maybe-uninitialized//g' {} +
+    find . -type f -name "Makefile" -exec sed -i 's/-implicit-function-declaration//g' {} +
+    find . -type f -name "Makefile" -exec sed -i 's/--implicit-function-declaration//g' {} +
 
-    # Build modules
-    make -j$(nproc) O=out ARCH=arm64 CROSS_COMPILE=aarch64-linux-gnu- modules
+    # Build kernel image
+    make -j$(nproc) O=out ARCH=arm64 CROSS_COMPILE=aarch64-linux-gnu- Image.gz dtbs modules
 
     cd ..
 
@@ -185,23 +232,29 @@ build_kernel() {
 create_anykernel3() {
     log_info "Creating AnyKernel3 package..."
 
-    mkdir -p anykernel3/anykernel3/kernel
-    mkdir -p anykernel3/anykernel3/META-INF/com/google/android
-    mkdir -p anykernel3/anykernel3/tools
-    mkdir -p anykernel3/anykernel3/modules
+    # Clean and recreate zip contents directory
+    rm -rf anykernel3/anykernel3
+    mkdir -p anykernel3/anykernel3
 
-    # Copy kernel image
-    cp kernel/out/arch/arm64/boot/Image.gz anykernel3/anykernel3/kernel/
+    # Copy kernel image to zip root
+    cp kernel/out/arch/arm64/boot/Image.gz anykernel3/anykernel3/Image.gz
 
-    # Copy dtbo if available
+    # Copy dtbo to zip root
     if [ -f kernel/out/arch/arm64/boot/dtbo.img ]; then
         cp kernel/out/arch/arm64/boot/dtbo.img anykernel3/anykernel3/dtbo.img
     fi
 
-    # Copy modules
+    # Copy anykernel.sh to zip root
+    cp anykernel3/anykernel.sh anykernel3/anykernel3/anykernel.sh
+
+    # Copy modules (ensure directory exists)
+    mkdir -p anykernel3/anykernel3/modules/
     find kernel/out -name "*.ko" -exec cp {} anykernel3/anykernel3/modules/ \;
 
-    # Create zip
+    # Copy tools from staging
+    cp -r anykernel3/tools/* anykernel3/anykernel3/tools/
+
+    # Create zip from zip contents directory
     cd anykernel3/anykernel3
     zip -r9 ../kebab-kernelsu-susfs-a13-4.19.zip .
 
@@ -211,32 +264,6 @@ create_anykernel3() {
     cp anykernel3/kebab-kernelsu-susfs-a13-4.19.zip "$OUTPUT_DIR/"
 
     log_info "AnyKernel3 package created: $OUTPUT_DIR/kebab-kernelsu-susfs-a13-4.19.zip"
-}
-
-create_boot_img() {
-    log_info "Creating boot.img package..."
-
-    mkdir -p anykernel3/anykernel3/boot
-
-    # For LineageOS 20, we need to extract the original boot.img and replace the kernel
-    # This is a simplified version - actual implementation requires unpacking/repacking boot.img
-    # using tools like unpackbootimg and mkbootimg
-
-    log_warn "boot.img creation requires unpackbootimg/mkbootimg tools"
-    log_warn "Please manually extract boot.img from your current LineageOS 20 installation"
-    log_warn "and replace the kernel with the newly built one."
-
-    # Copy the kernel as a reference
-    cp kernel/out/arch/arm64/boot/Image.gz anykernel3/anykernel3/boot/
-
-    cd anykernel3
-    zip -r9 kebab-kernelsu-susfs-a13-4.19-boot.zip anykernel3/
-
-    cd ..
-
-    cp anykernel3/kebab-kernelsu-susfs-a13-4.19-boot.zip "$OUTPUT_DIR/"
-
-    log_info "boot.img package created: $OUTPUT_DIR/kebab-kernelsu-susfs-a13-4.19-boot.zip"
 }
 
 main() {
@@ -251,7 +278,6 @@ main() {
     configure_kernel
     build_kernel
     create_anykernel3
-    create_boot_img
 
     log_info "=========================================="
     log_info "Build completed successfully!"

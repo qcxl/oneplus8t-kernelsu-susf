@@ -1,32 +1,31 @@
 #!/bin/bash
-# Download AnyKernel3 tools
-# This script downloads the necessary tools for AnyKernel3
+# Download AnyKernel3 tools (magiskboot + busybox ARM)
+# For CI environment - these are ARM binaries packaged into the flashable zip
 
 set -e
 
-TOOLS_DIR="$(pwd)/anykernel3/anykernel3/tools"
+TOOLS_DIR="$(cd "$(dirname "$0")/../anykernel3/tools" && pwd)"
 mkdir -p "$TOOLS_DIR"
 
-echo "Downloading AnyKernel3 tools..."
+# Download magiskboot (ARM static binary from osm0sis/AnyKernel3)
+if [ ! -f "$TOOLS_DIR/magiskboot" ]; then
+    echo "Downloading magiskboot..."
+    curl -fsSL -o "$TOOLS_DIR/magiskboot" \
+        "https://raw.githubusercontent.com/osm0sis/AnyKernel3/master/tools/arm/magiskboot"
+    chmod +x "$TOOLS_DIR/magiskboot"
+fi
 
-# Download unpackbootimg and mkbootimg from CyanogenMod/android_boot
-# These are commonly available tools for boot.img manipulation
+# Download busybox (ARM static binary)
+if [ ! -f "$TOOLS_DIR/busybox" ]; then
+    echo "Downloading busybox..."
+    curl -fsSL -o "$TOOLS_DIR/busybox" \
+        "https://busybox.net/downloads/binaries/1.35.0-armv6l-busybox-static" || {
+        # Fallback: use a mirror
+        curl -fsSL -o "$TOOLS_DIR/busybox" \
+            "https://github.com/termux/termux-packages/files/run/termux-packages-bootstrap-*-arm.zip" || true
+    }
+    chmod +x "$TOOLS_DIR/busybox" 2>/dev/null || true
+fi
 
-# Option 1: Download from CyanogenMod
-curl -L -o "$TOOLS_DIR/unpackbootimg" \
-    "https://raw.githubusercontent.com/CyanogenMod/android_boot/oreo-m2-release/tools/unpackbootimg" || true
-
-curl -L -o "$TOOLS_DIR/mkbootimg" \
-    "https://raw.githubusercontent.com/CyanogenMod/android_boot/oreo-m2-release/tools/mkbootimg" || true
-
-# Option 2: Download from osm0sis
-curl -L -o "$TOOLS_DIR/magiskboot" \
-    "https://github.com/.topjohnwu/magisk-tools/releases/download/stable/magiskboot" || true
-
-# Make tools executable
-chmod +x "$TOOLS_DIR/unpackbootimg" 2>/dev/null || true
-chmod +x "$TOOLS_DIR/mkbootimg" 2>/dev/null || true
-chmod +x "$TOOLS_DIR/magiskboot" 2>/dev/null || true
-
-echo "Tools downloaded to $TOOLS_DIR"
-ls -lh "$TOOLS_DIR"
+echo "AnyKernel3 tools ready at: $TOOLS_DIR"
+ls -la "$TOOLS_DIR/"
