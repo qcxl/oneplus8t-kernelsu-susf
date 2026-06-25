@@ -90,6 +90,9 @@ long strncpy_from_user_nofault(char *dst, const char __user *src, long count)
     return ret;
 }
 
+/* Stub for susfs_extra_works variable referenced from bitops */
+int susfs_extra_works;
+
 /* Stub implementations for fsa4480 functions called by audio codecs */
 int fsa4480_reg_notifier(struct notifier_block *nb, unsigned long val, void *data)
 {
