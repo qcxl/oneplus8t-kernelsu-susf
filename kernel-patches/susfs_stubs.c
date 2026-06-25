@@ -151,6 +151,22 @@ int register_lcdinfo_notifier(void)
     return 0;
 }
 
+int unregister_lcdinfo_notifier(void)
+{
+    return 0;
+}
+
 /* Stub for susfs_extra_works variable referenced from bitops
  * Needs to be aligned to 8 bytes to avoid relocation errors */
 int susfs_extra_works __aligned(8);
+
+/* Stubs for SUSFS functions called by sus_su.c */
+bool susfs_is_allow_su(void)
+{
+    return true;
+}
+
+bool ksu_escape_to_root(void)
+{
+    return true;
+}
