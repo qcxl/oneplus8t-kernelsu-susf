@@ -133,25 +133,14 @@ jobs:
       - name: Build kernel
         run: |
           cd kernel
-          # Remove problematic compiler flags (compatibility with newer GCC)
-          # Step 1: exact-match specific -Werror=xxx patterns first
-          find . -name Makefile -exec sed -i \
-              -e 's/-Werror=return-type//g' \
-              -e 's/-Werror=implicit-int//g' \
-              -e 's/-Werror=strict-prototypes//g' \
-              -e 's/-Werror=date-time//g' \
-              -e 's/-Werror=incompatible-pointer-types//g' \
-              -e 's/-Werror=designated-init//g' \
-              -e 's/-Werror=maybe-uninitialized//g' \
-              -e 's/-Werror=unused-variable//g' \
-              -e 's/-Werror=misleading-indentation//g' \
-              -e 's/-Werror=format=//g' \
-              -e 's/-Werror-implicit-function-declaration//g' \
-              -e 's/-implicit-function-declaration//g' \
-              -e 's/--implicit-function-declaration//g' \
-              -e 's/-mgeneral-regs-only//g' {} +
-          # Step 2: catch-all for any remaining -Werror variants not listed above
-          find . -name Makefile -exec sed -i 's/-Werror//g' {} +
+          # Add -Wno-error to kernel Makefile to disable treating warnings as errors
+          # This is more robust than removing individual -Werror=xxx flags
+          if [ -f "Makefile" ] && ! grep -q "^ccflags-y += -Wno-error" Makefile; then
+            echo 'ccflags-y += -Wno-error' >> Makefile
+          fi
+
+          # Also remove problematic -mgeneral-regs-only flag
+          find . -name Makefile -exec sed -i 's/-mgeneral-regs-only//g' {} +
           make -j$(nproc) O=out ARCH=arm64 CROSS_COMPILE=aarch64-linux-gnu- Image.gz dtbs modules
 
       - name: Prepare AnyKernel3 package
