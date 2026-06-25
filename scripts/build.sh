@@ -16,7 +16,7 @@ KERNEL_BRANCH="lineage-20"
 KSU_REPO="https://github.com/SukiSU-Ultra/SukiSU-Ultra.git"
 KSU_BRANCH="builtin"
 SUSFS_REPO="https://gitlab.com/simonpunk/susfs4ksu.git"
-SUSFS_BRANCH="master"
+SUSFS_BRANCH="kernel-4.19"
 DEVICE="kebab"
 OUTPUT_DIR="$(pwd)/output"
 
@@ -93,7 +93,7 @@ clone_ksu() {
 }
 
 clone_susfs() {
-    log_info "Cloning SUSFS (master branch)..."
+    log_info "Cloning SUSFS (kernel-4.19 branch)..."
     if [ ! -d "susfs" ]; then
         git clone --depth 1 -b "$SUSFS_BRANCH" "$SUSFS_REPO" susfs
     else
@@ -131,29 +131,35 @@ apply_patches() {
         patch -p1 < 10_enable_susfs_for_ksu.patch || true
     fi
 
-    # Copy SUSFS source files
+    # Copy SUSFS source files (kernel-4.19 branch)
     if [ -f "../susfs/kernel_patches/fs/susfs.c" ]; then
         cp ../susfs/kernel_patches/fs/susfs.c fs/
+    fi
+
+    if [ -f "../susfs/kernel_patches/fs/sus_su.c" ]; then
+        cp ../susfs/kernel_patches/fs/sus_su.c fs/
     fi
 
     if [ -f "../susfs/kernel_patches/include/linux/susfs.h" ]; then
         cp ../susfs/kernel_patches/include/linux/susfs.h include/linux/
     fi
 
-    # Copy SUSFS compatibility files
-    if [ -f "../kernel-patches/susfs_compat.h" ]; then
-        cp ../kernel-patches/susfs_compat.h include/linux/
-    fi
-    if [ -f "../kernel-patches/susfs_compat.c" ]; then
-        cp ../kernel-patches/susfs_compat.c fs/
-    fi
-    if [ -f "../kernel-patches/susfs_def.h" ]; then
-        cp ../kernel-patches/susfs_def.h include/linux/
+    if [ -f "../susfs/kernel_patches/include/linux/sus_su.h" ]; then
+        cp ../susfs/kernel_patches/include/linux/sus_su.h include/linux/
     fi
 
-    # Add susfs_compat.o to fs/Makefile (after susfs.o, avoid duplicates)
-    if [ -f "fs/Makefile" ] && ! grep -qE '^obj-\$\(CONFIG_KSU_SUSFS\).*susfs_compat\.o' fs/Makefile; then
-        echo 'obj-$(CONFIG_KSU_SUSFS) += susfs_compat.o' >> fs/Makefile
+    if [ -f "../susfs/kernel_patches/include/linux/susfs_def.h" ]; then
+        cp ../susfs/kernel_patches/include/linux/susfs_def.h include/linux/
+    fi
+
+    # Add SUSFS objects to fs/Makefile (avoid duplicates)
+    if [ -f "fs/Makefile" ]; then
+        if ! grep -qE '^obj-\$\(CONFIG_KSU_SUSFS\).*susfs\.o' fs/Makefile; then
+            echo 'obj-$(CONFIG_KSU_SUSFS) += susfs.o' >> fs/Makefile
+        fi
+        if [ -f "fs/sus_su.c" ] && ! grep -qE '^obj-\$\(CONFIG_KSU_SUSFS\).*sus_su\.o' fs/Makefile; then
+            echo 'obj-$(CONFIG_KSU_SUSFS) += sus_su.o' >> fs/Makefile
+        fi
     fi
 
     cd ..
@@ -186,7 +192,7 @@ build_kernel() {
     cd kernel
 
     # Remove problematic compiler flags (compatibility with newer GCC)
-    # IMPORTANT: exact-match patterns first, then broad matches, to avoid partial matches
+    # IMPORTANT: exact-match patterns first to avoid partial matches
     find . -name Makefile -exec sed -i \
         -e 's/-Werror=return-type//g' \
         -e 's/-Werror=implicit-int//g' \

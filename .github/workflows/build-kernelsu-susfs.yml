@@ -10,7 +10,7 @@ on:
       susfs_version:
         description: 'SUSFS version/tag'
         required: false
-        default: 'v1.3.8'
+        default: 'v1.5.5'
       ksu_version:
         description: 'KernelSU version'
         required: false
@@ -75,9 +75,9 @@ jobs:
         run: |
           git clone --depth 1 -b builtin https://github.com/SukiSU-Ultra/SukiSU-Ultra.git kernel-su
 
-      - name: Clone SUSFS (master branch)
+      - name: Clone SUSFS (kernel-4.19 branch)
         run: |
-          git clone --depth 1 -b master https://gitlab.com/simonpunk/susfs4ksu.git susfs
+          git clone --depth 1 -b kernel-4.19 https://gitlab.com/simonpunk/susfs4ksu.git susfs
 
       - name: Clone LineageOS 20 kernel source
         run: |
@@ -103,18 +103,21 @@ jobs:
             echo 'obj-$(CONFIG_KSU_SUSFS) += susfs.o' >> fs/Makefile
           fi
 
-          # Copy SUSFS source files
+          # Copy SUSFS source files (kernel-4.19 branch)
           cp ../susfs/kernel_patches/fs/susfs.c fs/
+          cp ../susfs/kernel_patches/fs/sus_su.c fs/
           cp ../susfs/kernel_patches/include/linux/susfs.h include/linux/
+          cp ../susfs/kernel_patches/include/linux/sus_su.h include/linux/
+          cp ../susfs/kernel_patches/include/linux/susfs_def.h include/linux/
 
-          # Copy SUSFS compatibility files
-          cp ../kernel-patches/susfs_compat.h include/linux/
-          cp ../kernel-patches/susfs_compat.c fs/
-          cp ../kernel-patches/susfs_def.h include/linux/
-
-          # Add susfs_compat.o to fs/Makefile (after susfs.o, avoid duplicates)
-          if [ -f "fs/Makefile" ] && ! grep -qE '^obj-\$\(CONFIG_KSU_SUSFS\).*susfs_compat\.o' fs/Makefile; then
-              echo 'obj-$(CONFIG_KSU_SUSFS) += susfs_compat.o' >> fs/Makefile
+          # Add SUSFS objects to fs/Makefile (avoid duplicates)
+          if [ -f "fs/Makefile" ]; then
+            if ! grep -qE '^obj-\$\(CONFIG_KSU_SUSFS\).*susfs\.o' fs/Makefile; then
+              echo 'obj-$(CONFIG_KSU_SUSFS) += susfs.o' >> fs/Makefile
+            fi
+            if [ -f "fs/sus_su.c" ] && ! grep -qE '^obj-\$\(CONFIG_KSU_SUSFS\).*sus_su\.o' fs/Makefile; then
+              echo 'obj-$(CONFIG_KSU_SUSFS) += sus_su.o' >> fs/Makefile
+            fi
           fi
 
           # Apply SUSFS compatibility patches
@@ -197,12 +200,12 @@ jobs:
         if: github.ref == 'refs/heads/main'
         uses: softprops/action-gh-release@v1
         with:
-          tag_name: v4.1.3-susfs-1.3.8-${{ github.run_number }}
+          tag_name: v4.1.3-susfs-1.5.5-${{ github.run_number }}
           name: KernelSU + SUSFS for OnePlus 8T (kebab)
           body: |
             Automated build of KernelSU + SUSFS for OnePlus 8T (kebab) LineageOS 20.
             - KernelSU: builtin branch (v4.1.3)
-            - SUSFS: master branch (v1.3.8)
+            - SUSFS: kernel-4.19 branch (v1.5.5)
             - Kernel: 4.19.x (LineageOS 20)
           files: |
             anykernel3/kebab-kernelsu-susfs-a13-4.19-*.zip

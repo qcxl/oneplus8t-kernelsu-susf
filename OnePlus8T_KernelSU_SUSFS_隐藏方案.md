@@ -5,7 +5,7 @@
 > **ROM**: LineageOS 20.0 (Android 13) Build 17372 (2024-02-09)
 > **内核**: Linux 4.19.x (非 GKI)
 > **KernelSU**: SukiSU-Ultra v4.1.3 (builtin 分支)
-> **SUSFS**: v1.3.8 (master 分支)
+> **SUSFS**: v1.5.5 (kernel-4.19 分支)
 > **目标**: 内核级隐藏 + Root 后环境隐藏，过银行/游戏/安全检测
 
 ---
@@ -575,7 +575,7 @@ adb install <检测工具.apk>
 |:----|:----:|:----|:----|
 | LineageOS 20 内核源码 | lineage-20 | https://github.com/LineageOS/android_kernel_oneplus_sm8250 | 编译基础 |
 | SukiSU-Ultra | v4.1.3 builtin | https://github.com/SukiSU-Ultra/SukiSU-Ultra | KernelSU 内核补丁 |
-| SUSFS | master | https://gitlab.com/simonpunk/susfs4ksu | SUSFS 内核补丁 |
+| SUSFS | kernel-4.19 (v1.5.5) | https://gitlab.com/simonpunk/susfs4ksu | SUSFS 内核补丁 |
 
 ### 阶段 3：Root 环境 + 隐藏模块
 
@@ -584,7 +584,7 @@ adb install <检测工具.apk>
 | SukiSU Manager | v4.1.3+ | https://github.com/SukiSU-Ultra/SukiSU-Ultra/releases | Root 管理 |
 | ZygiskNext | v1.4.2+ | https://github.com/Dr-TSNG/ZygiskNext/releases | Zygisk 环境 |
 | Shamiko | v1.2.5+ | https://github.com/LSPosed/LSPosed.github.io/releases | Root 隐藏 |
-| SUSFS 模块 | v1.3.8+ | https://github.com/sidex15/susfs4ksu-module/releases | SUSFS 配置 |
+| SUSFS 模块 | v1.5.5+ | https://github.com/sidex15/susfs4ksu-module/releases | SUSFS 配置 |
 | LSPosed | v1.9.4+ | https://github.com/LSPosed/LSPosed/releases | Xposed 框架 |
 | HMA | v1.8.3+ | https://github.com/Dr-TSNG/Hide-My-Applist/releases | 应用列表隐藏 |
 | TrickyStore | v2.1.0+ | https://github.com/5ec1cff/TrickyStore/releases | Play Integrity |

@@ -7,7 +7,7 @@ Automated builds of **KernelSU + SUSFS** kernel for **OnePlus 8T (kebab)** runni
 ## Features
 
 - **KernelSU**: Built-in mode (v4.1.3)
-- **SUSFS**: Kernel-level root hiding (v1.3.8)
+- **SUSFS**: Kernel-level root hiding (v1.5.5)
 - **Kernel**: 4.19.x (LineageOS 20)
 - **Architecture**: arm64
 
