@@ -108,3 +108,16 @@ int fsa4480_switch_event(int event)
 {
     return 0;
 }
+
+/* Stub implementations for IPA functions */
+int ipa_query_teth_stats(struct ipa_teth_stats *teth_stats)
+{
+    return 0;
+}
+
+int ipa_set_flt_rt_stats(struct ipa_flt_rt_stats *flt_rt_stats)
+{
+    return 0;
+}
+
+int ipa_ut_hw_stats_data;

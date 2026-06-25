@@ -266,6 +266,11 @@ jobs:
               sed -i 's/ipa_test_hw_stats\.o//g' drivers/platform/msm/ipa/test/Makefile
             fi
 
+            # Remove all IPA test files to avoid cascading undefined references
+            if [ -f "drivers/platform/msm/ipa/test/Makefile" ]; then
+              sed -i 's/ipa_ut_.*\.o//g' drivers/platform/msm/ipa/test/Makefile
+            fi
+
             # lowmem_dbg.c fails to compile with newer GCC
             if [ -f "drivers/soc/oplus/lowmem_dbg/lowmem_dbg.c" ]; then
               sed -i 's/lowmem_dbg\.o//g' drivers/soc/oplus/lowmem_dbg/Makefile
