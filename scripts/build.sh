@@ -315,6 +315,11 @@ EOF
         sed -i 's/lowmem_dbg\.o//g' drivers/soc/oplus/lowmem_dbg/Makefile
     fi
 
+    # goodix_optical_fp/gf_spi.c fails to compile with newer GCC
+    if [ -f "drivers/input/oplus_fp_drivers/goodix_optical_fp/gf_spi.c" ]; then
+        sed -i 's/gf_spi\.o//g' drivers/input/oplus_fp_drivers/goodix_optical_fp/Makefile
+    fi
+
     # sde_crtc.c fails to compile with always_inline error
     if [ -f "techpack/display/msm/sde/sde_crtc.c" ]; then
         if [ -f "techpack/display/msm/sde/Makefile" ]; then
