@@ -152,6 +152,17 @@ apply_patches() {
         cp ../susfs/kernel_patches/include/linux/susfs_def.h include/linux/
     fi
 
+    # Copy SUSFS stub implementations for missing functions
+    # KernelSU v4.1.3 calls SUSFS functions that don't exist in kernel-4.19 branch (v1.5.5)
+    if [ -f "../susfs_stubs.c" ]; then
+        cp ../susfs_stubs.c drivers/kernelsu/
+    fi
+
+    # Add susfs_stubs.o to drivers/kernelsu Makefile
+    if [ -f "drivers/kernelsu/Makefile" ] && ! grep -q "susfs_stubs.o" drivers/kernelsu/Makefile; then
+        echo 'obj-$(CONFIG_KSU) += susfs_stubs.o' >> drivers/kernelsu/Makefile
+    fi
+
     # Add SUSFS objects to fs/Makefile (avoid duplicates)
     if [ -f "fs/Makefile" ]; then
         if ! grep -qE '^obj-\$\(CONFIG_KSU_SUSFS\).*susfs\.o' fs/Makefile; then
@@ -303,6 +314,17 @@ exec /usr/bin/aarch64-linux-gnu-gcc "${ARGS[@]}" || exec /usr/local/bin/aarch64-
 EOF
     chmod +x /tmp/ksu-build/bin/aarch64-linux-gnu-gcc
     export PATH="/tmp/ksu-build/bin:$PATH"
+
+    # Copy SUSFS stub implementations for missing functions
+    # KernelSU v4.1.3 calls SUSFS functions that don't exist in kernel-4.19 branch (v1.5.5)
+    if [ -f "../susfs_stubs.c" ]; then
+        cp ../susfs_stubs.c drivers/kernelsu/
+    fi
+
+    # Add susfs_stubs.o to drivers/kernelsu Makefile
+    if [ -f "drivers/kernelsu/Makefile" ] && ! grep -q "susfs_stubs.o" drivers/kernelsu/Makefile; then
+        echo 'obj-$(CONFIG_KSU) += susfs_stubs.o' >> drivers/kernelsu/Makefile
+    fi
 
     # Remove problematic files that fail to compile
     # ipa_hw_stats.c fails without visible error messages
