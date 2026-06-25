@@ -225,6 +225,16 @@ build_kernel() {
         find out -name Makefile -exec sed -i 's/-mgeneral-regs-only//g' {} +
     fi
 
+    # Fix kernelsu source compatibility issues
+    # 1. Replace 'fallthrough;' with comment (fallthrough macro not in 4.19)
+    if [ -f "drivers/kernelsu/policy/allowlist.c" ]; then
+        sed -i 's/^[[:space:]]*fallthrough;$/\/\/ fall through/g' drivers/kernelsu/policy/allowlist.c
+    fi
+    # 2. Define SUSFS_MAGIC if missing (required by dispatch.c)
+    if [ -f "include/uapi/supercall.h" ] && ! grep -q "SUSFS_MAGIC" include/uapi/supercall.h; then
+        sed -i '/KSU_INSTALL_MAGIC2/a DECLARE(__u32, SUSFS_MAGIC, 0x53555346);' include/uapi/supercall.h
+    fi
+
     # Build kernel image
     make -j$(nproc) O=out ARCH=arm64 CROSS_COMPILE=aarch64-linux-gnu- Image.gz dtbs modules
 
