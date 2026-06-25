@@ -134,6 +134,7 @@ jobs:
       - name: Build kernel
         run: |
           cd kernel
+          find . -type f \( -name "Makefile" -o -name "Kconfig*" -o -name "*.mk" \) -exec sed -i 's/-mgeneral-regs-only//g' {} +
           sed -i 's/-Werror-implicit-function-declaration//g' Makefile
           sed -i 's/-Werror=return-type//g' Makefile
           sed -i 's/-Werror=implicit-int//g' Makefile
@@ -144,7 +145,6 @@ jobs:
           sed -i 's/-Werror//g' Makefile
           sed -i 's/-implicit-function-declaration//g' Makefile
           sed -i 's/--implicit-function-declaration//g' Makefile
-          sed -i 's/-mgeneral-regs-only//g' Makefile
           make -j$(nproc) O=out ARCH=arm64 CROSS_COMPILE=aarch64-linux-gnu- Image.gz dtbs modules
 
       - name: Prepare AnyKernel3 package
