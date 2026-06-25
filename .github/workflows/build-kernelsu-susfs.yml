@@ -301,6 +301,12 @@ jobs:
               sed -i 's/msm_drm\.o//g' techpack/display/msm/Makefile
             fi
 
+            # Remove ALL pll_*.o files from Makefile to avoid linker errors
+            # pll_drv.c references functions from msm_drm.c which is removed
+            if [ -f "techpack/display/pll/Makefile" ]; then
+              python3 ../scripts/fix_makefile.py techpack/display/pll/Makefile 'pll_[a-zA-Z0-9_]*\.o'
+            fi
+
             make -j$(nproc) O=out ARCH=arm64 CROSS_COMPILE=aarch64-linux-gnu- Image.gz dtbs modules
 
       - name: Prepare AnyKernel3 package
