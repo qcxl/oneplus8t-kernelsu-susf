@@ -192,25 +192,10 @@ build_kernel() {
     cd kernel
 
     # Remove problematic compiler flags (compatibility with newer GCC)
-    # Step 1: exact-match specific -Werror=xxx patterns to avoid leaving
-    # behind fragments like '=return-type' when using blanket removal
-    find . -name Makefile -exec sed -i \
-        -e 's/-Werror=return-type//g' \
-        -e 's/-Werror=implicit-int//g' \
-        -e 's/-Werror=strict-prototypes//g' \
-        -e 's/-Werror=date-time//g' \
-        -e 's/-Werror=incompatible-pointer-types//g' \
-        -e 's/-Werror=designated-init//g' \
-        -e 's/-Werror=maybe-uninitialized//g' \
-        -e 's/-Werror=unused-variable//g' \
-        -e 's/-Werror=misleading-indentation//g' \
-        -e 's/-Werror=format=//g' \
-        -e 's/-Werror-implicit-function-declaration//g' \
-        {} +
-    # Step 2: blanket removal for any remaining -Werror variants
-    find . -name Makefile -exec sed -i 's/-Werror//g' {} +
+    # Use grep to find ALL files containing -Werror, not just Makefiles
+    grep -rl "-Werror" . --include="Makefile" --include="Kbuild" --include="*.mk" 2>/dev/null | xargs sed -i 's/-Werror//g'
     if [ -d "out" ]; then
-        find out -name Makefile -exec sed -i 's/-Werror//g' {} +
+        grep -rl "-Werror" out --include="Makefile" --include="Kbuild" --include="*.mk" 2>/dev/null | xargs sed -i 's/-Werror//g'
     fi
 
     # Remove -implicit-function-declaration flag (removed in GCC 11)
@@ -266,28 +251,28 @@ build_kernel() {
     # The 50_add_susfs_in_kernel-4.19.patch may fail to apply cleanly,
     # leaving namespace.c without required SUSFS definitions.
 
-    # 1. Ensure namespace.c includes susfs_def.h
-    if [ -f "fs/namespace.c" ] && ! grep -q "susfs_def.h" fs/namespace.c; then
-        sed -i '/#include "internal.h"/a \
-#ifdef CONFIG_KSU_SUSFS_SUS_MOUNT\
-#include <linux/susfs_def.h>\
-#endif' fs/namespace.c
-    fi
-
-    # 2. Add missing SUSFS mount ID definitions to namespace.c
-    if [ -f "fs/namespace.c" ] && ! grep -q "susfs_mnt_id_ida" fs/namespace.c; then
-        sed -i '/#include "internal.h"/a \
-\
-#ifdef CONFIG_KSU_SUSFS_SUS_MOUNT\
-extern bool susfs_is_current_ksu_domain(void);\
-extern bool susfs_is_current_zygote_domain(void);\
-\
-static DEFINE_IDA(susfs_mnt_id_ida);\
-static DEFINE_IDA(susfs_mnt_group_ida);\
-\
-#define CL_ZYGOTE_COPY_MNT_NS BIT(24) /* used by copy_mnt_ns() */\
-#define CL_COPY_MNT_NS BIT(25) /* used by copy_mnt_ns() */\
-#endif' fs/namespace.c
+    # 1. Ensure namespace.c includes susfs_def.h and has SUSFS mount ID definitions
+    if [ -f "fs/namespace.c" ]; then
+        awk '
+/#include "internal.h"/ {
+    print;
+    print "";
+    print "#ifdef CONFIG_KSU_SUSFS_SUS_MOUNT";
+    print "#include <linux/susfs_def.h>";
+    print "";
+    print "extern bool susfs_is_current_ksu_domain(void);";
+    print "extern bool susfs_is_current_zygote_domain(void);";
+    print "";
+    print "static DEFINE_IDA(susfs_mnt_id_ida);";
+    print "static DEFINE_IDA(susfs_mnt_group_ida);";
+    print "";
+    print "#define CL_ZYGOTE_COPY_MNT_NS BIT(24) /* used by copy_mnt_ns() */";
+    print "#define CL_COPY_MNT_NS BIT(25) /* used by copy_mnt_ns() */";
+    print "#endif";
+    next;
+}
+{ print }
+' fs/namespace.c > fs/namespace.c.tmp && mv fs/namespace.c.tmp fs/namespace.c
     fi
 
     # Build kernel image
