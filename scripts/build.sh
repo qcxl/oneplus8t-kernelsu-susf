@@ -191,11 +191,10 @@ build_kernel() {
 
     cd kernel
 
-    # Add -Wno-error to kernel Makefile to disable treating warnings as errors
-    # This is more robust than removing individual -Werror=xxx flags
-    if [ -f "Makefile" ] && ! grep -q "^ccflags-y += -Wno-error" Makefile; then
-        echo 'ccflags-y += -Wno-error' >> Makefile
-    fi
+    # Remove -Werror from all Makefiles to prevent GCC from treating
+    # warnings as errors. This is necessary because Ubuntu 22.04's GCC 11
+    # emits many new warnings that the kernel codebase wasn't designed for.
+    find . -name Makefile -exec sed -i 's/-Werror//g' {} +
 
     # Also remove problematic -mgeneral-regs-only flag
     find . -name Makefile -exec sed -i 's/-mgeneral-regs-only//g' {} +
