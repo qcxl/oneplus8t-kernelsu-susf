@@ -1,0 +1,26 @@
+#!/sbin/sh
+# AnyKernel3 update-binary wrapper
+# This is called by the Android recovery
+
+set -e
+
+# Extract ramdisk and tools
+mkdir -p /tmp/anykernel_ramdisk
+mkdir -p /tmp/anykernel
+
+# Extract this archive's ramdisk and tools
+unzip -o /tmp/anykernel.zip -d /tmp/ > /dev/null 2>&1 || true
+
+# Copy ramdisk contents
+if [ -d /tmp/anykernel/ramdisk ]; then
+    cp -rf /tmp/anykernel/ramdisk/* /tmp/anykernel_ramdisk/
+fi
+
+# Make tools executable
+chmod -R 755 /tmp/anykernel_ramdisk/tools 2>/dev/null || true
+
+# Run installation script
+chmod 755 /tmp/anykernel_ramdisk/install.sh
+/tmp/anykernel_ramdisk/install.sh
+
+exit 0

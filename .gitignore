@@ -1,0 +1,59 @@
+# Build outputs
+*.zip
+*.img
+*.tar
+*.gz
+*.bz2
+*.xz
+*.7z
+
+# Extracted ROM files
+lineage-20.0-20240209-nightly-kebab-signed/
+extracted_*/
+
+# Kernel build outputs
+kernel/out/
+kernel/arch/
+kernel/include/
+kernel/drivers/
+kernel/fs/
+kernel/net/
+kernel/security/
+kernel/sound/
+kernel/init/
+kernel/ipc/
+kernel/lib/
+kernel/mm/
+kernel/kernel/
+kernel/crypto/
+kernel/block/
+kernel/fs/
+kernel/ipc/
+kernel/lib/
+kernel/mm/
+kernel/kernel/
+kernel/crypto/
+kernel/block/
+
+# Android NDK
+android-ndk*/
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+*.pid
+
+# Temporary files
+tmp/
+temp/
+*.tmp
