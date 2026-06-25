@@ -10,7 +10,7 @@ on:
       susfs_version:
         description: 'SUSFS version/tag'
         required: false
-        default: 'v1.5.5'
+        default: 'v1.3.8'
       ksu_version:
         description: 'KernelSU version'
         required: false
@@ -63,7 +63,7 @@ jobs:
           cd ~/android-ndk
           wget -q https://dl.google.com/android/repository/android-ndk-r27b-linux.zip
           unzip -q android-ndk-r27b-linux.zip
-          echo "NDK_HOME=~/android-ndk/android-ndk-r27b" >> $GITHUB_ENV
+          echo "NDK_HOME=$HOME/android-ndk/android-ndk-r27b" >> $GITHUB_ENV
           echo "$HOME/android-ndk/android-ndk-r27b" >> $GITHUB_PATH
 
       - name: Install AnyKernel3 tools
@@ -99,7 +99,7 @@ jobs:
           fi
 
           # Ensure susfs.o is in fs/Makefile (in case patch was already applied)
-          if [ ! -f "fs/Makefile" ] || ! grep -q "susfs.o" fs/Makefile; then
+          if [ -f "fs/Makefile" ] && ! grep -qE '^obj-\$\(CONFIG_KSU_SUSFS\).*susfs\.o' fs/Makefile; then
             echo 'obj-$(CONFIG_KSU_SUSFS) += susfs.o' >> fs/Makefile
           fi
 
@@ -112,8 +112,10 @@ jobs:
           cp ../kernel-patches/susfs_compat.c fs/
           cp ../kernel-patches/susfs_def.h include/linux/
 
-          # Add susfs_compat.o to fs/Makefile (after susfs.o to ensure correct link order)
-          echo 'obj-$(CONFIG_KSU_SUSFS) += susfs_compat.o' >> fs/Makefile
+          # Add susfs_compat.o to fs/Makefile (after susfs.o, avoid duplicates)
+          if [ -f "fs/Makefile" ] && ! grep -qE '^obj-\$\(CONFIG_KSU_SUSFS\).*susfs_compat\.o' fs/Makefile; then
+              echo 'obj-$(CONFIG_KSU_SUSFS) += susfs_compat.o' >> fs/Makefile
+          fi
 
           # Apply SUSFS compatibility patches
           if [ -f "../susfs/kernel_patches/KernelSU/10_enable_susfs_for_ksu.patch" ]; then
@@ -128,48 +130,29 @@ jobs:
           # Load default config
           make O=out ARCH=arm64 CROSS_COMPILE=aarch64-linux-gnu- vendor/kona-perf_defconfig
 
-          # Enable KernelSU
+          # Enable KernelSU via ksu.config (single source of truth)
           scripts/kconfig/merge_config.sh -m -O out out/.config ../kernel-patches/ksu.config || true
 
-          # Manually add required configs
-          echo "CONFIG_KSU=y" >> out/.config
-          echo "CONFIG_KSU_SUSFS=y" >> out/.config
-          echo "CONFIG_KSU_SUSFS_HAS_MAGIC_MOUNT=y" >> out/.config
-          echo "CONFIG_KSU_SUSFS_SUS_PATH=y" >> out/.config
-          echo "CONFIG_KSU_SUSFS_SUS_MOUNT=y" >> out/.config
-          echo "CONFIG_KSU_SUSFS_AUTO_ADD_SUS_KSTAT=y" >> out/.config
-          echo "CONFIG_KSU_SUSFS_AUTO_ADD_SUS_MOUNT=y" >> out/.config
-          echo "CONFIG_KSU_SUSFS_HIDE_KSU_SUSFS_SYMBOLS=y" >> out/.config
-          echo "CONFIG_KSU_MANUAL_HOOK=y" >> out/.config
-          echo "CONFIG_KSU_ALLOWLIST_MODE=y" >> out/.config
-          echo "CONFIG_KSU_VERIFY_SUSFS=y" >> out/.config
-          echo "CONFIG_KSU_SUSFS_SUS_MAPS=y" >> out/.config
-          echo "CONFIG_KSU_SUSFS_SPOOF_UNAME=y" >> out/.config
-          echo "CONFIG_KSU_SUSFS_SUS_PROC_FD_LINK=y" >> out/.config
-          echo "CONFIG_KSU_SUSFS_TRY_UMOUNT=y" >> out/.config
-          echo "CONFIG_KSU_SUSFS_ENABLE_LOG=y" >> out/.config
-
-          # Disable KPM for non-GKI
-          echo "CONFIG_KPM=n" >> out/.config
-
-          # Update config
+          # Update config (resolve dependencies and set defaults)
           make O=out ARCH=arm64 CROSS_COMPILE=aarch64-linux-gnu- oldconfig
 
       - name: Build kernel
         run: |
           cd kernel
-          find . -type f \( -name "Makefile" -o -name "Kconfig*" -o -name "*.mk" \) -exec sed -i 's/-mgeneral-regs-only//g' {} +
-          find . -type f -name "Makefile" -exec sed -i 's/-Werror//g' {} +
-          find . -type f -name "Makefile" -exec sed -i 's/-Werror-implicit-function-declaration//g' {} +
-          find . -type f -name "Makefile" -exec sed -i 's/-Werror=return-type//g' {} +
-          find . -type f -name "Makefile" -exec sed -i 's/-Werror=implicit-int//g' {} +
-          find . -type f -name "Makefile" -exec sed -i 's/-Werror=strict-prototypes//g' {} +
-          find . -type f -name "Makefile" -exec sed -i 's/-Werror=date-time//g' {} +
-          find . -type f -name "Makefile" -exec sed -i 's/-Werror=incompatible-pointer-types//g' {} +
-          find . -type f -name "Makefile" -exec sed -i 's/-Werror=designated-init//g' {} +
-          find . -type f -name "Makefile" -exec sed -i 's/-Werror=maybe-uninitialized//g' {} +
-          find . -type f -name "Makefile" -exec sed -i 's/-implicit-function-declaration//g' {} +
-          find . -type f -name "Makefile" -exec sed -i 's/--implicit-function-declaration//g' {} +
+          # Remove problematic compiler flags (compatibility with newer GCC)
+          # IMPORTANT: exact-match patterns first to avoid partial matches
+          find . -name Makefile -exec sed -i \
+              -e 's/-Werror=return-type//g' \
+              -e 's/-Werror=implicit-int//g' \
+              -e 's/-Werror=strict-prototypes//g' \
+              -e 's/-Werror=date-time//g' \
+              -e 's/-Werror=incompatible-pointer-types//g' \
+              -e 's/-Werror=designated-init//g' \
+              -e 's/-Werror=maybe-uninitialized//g' \
+              -e 's/-Werror-implicit-function-declaration//g' \
+              -e 's/-implicit-function-declaration//g' \
+              -e 's/--implicit-function-declaration//g' \
+              -e 's/-mgeneral-regs-only//g' {} +
           make -j$(nproc) O=out ARCH=arm64 CROSS_COMPILE=aarch64-linux-gnu- Image.gz dtbs modules
 
       - name: Prepare AnyKernel3 package
@@ -214,12 +197,12 @@ jobs:
         if: github.ref == 'refs/heads/main'
         uses: softprops/action-gh-release@v1
         with:
-          tag_name: v4.1.3-susfs-1.5.5-${{ github.run_number }}
+          tag_name: v4.1.3-susfs-1.3.8-${{ github.run_number }}
           name: KernelSU + SUSFS for OnePlus 8T (kebab)
           body: |
             Automated build of KernelSU + SUSFS for OnePlus 8T (kebab) LineageOS 20.
             - KernelSU: builtin branch (v4.1.3)
-            - SUSFS: master branch (v1.5.5)
+            - SUSFS: master branch (v1.3.8)
             - Kernel: 4.19.x (LineageOS 20)
           files: |
             anykernel3/kebab-kernelsu-susfs-a13-4.19-*.zip

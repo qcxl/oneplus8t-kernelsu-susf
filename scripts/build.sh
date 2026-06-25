@@ -69,7 +69,6 @@ setup_directories() {
     log_info "Setting up directories..."
     mkdir -p "$OUTPUT_DIR"
     mkdir -p kernel
-    mkdir -p patches
     log_info "Directories created."
 }
 
@@ -85,7 +84,7 @@ clone_kernel() {
 
 clone_ksu() {
     log_info "Cloning KernelSU (builtin branch)..."
-    if [ ! -d "kernel-su" ]; then
+    if [ ! -d "kernel-su/.git" ]; then
         git clone --depth 1 -b "$KSU_BRANCH" "$KSU_REPO" kernel-su
     else
         log_warn "KernelSU directory already exists, skipping clone."
@@ -122,7 +121,7 @@ apply_patches() {
     fi
 
     # Ensure susfs.o is in fs/Makefile (in case patch was already applied)
-    if [ -f "fs/Makefile" ] && ! grep -q "susfs.o" fs/Makefile; then
+    if [ -f "fs/Makefile" ] && ! grep -qE '^obj-\$\(CONFIG_KSU_SUSFS\).*susfs\.o' fs/Makefile; then
         echo 'obj-$(CONFIG_KSU_SUSFS) += susfs.o' >> fs/Makefile
     fi
 
@@ -152,8 +151,8 @@ apply_patches() {
         cp ../kernel-patches/susfs_def.h include/linux/
     fi
 
-    # Add susfs_compat.o to fs/Makefile (after susfs.o to ensure correct link order)
-    if [ -f "fs/Makefile" ]; then
+    # Add susfs_compat.o to fs/Makefile (after susfs.o, avoid duplicates)
+    if [ -f "fs/Makefile" ] && ! grep -qE '^obj-\$\(CONFIG_KSU_SUSFS\).*susfs_compat\.o' fs/Makefile; then
         echo 'obj-$(CONFIG_KSU_SUSFS) += susfs_compat.o' >> fs/Makefile
     fi
 
@@ -170,31 +169,10 @@ configure_kernel() {
     # Load default config
     make O=out ARCH=arm64 CROSS_COMPILE=aarch64-linux-gnu- vendor/kona-perf_defconfig
 
-    # Merge KSU config
+    # Merge KSU config (single source of truth: kernel-patches/ksu.config)
     scripts/kconfig/merge_config.sh -m -O out out/.config ../kernel-patches/ksu.config || true
 
-    # Manually add required configs (fallback if merge_config fails)
-    echo "CONFIG_KSU=y" >> out/.config
-    echo "CONFIG_KSU_SUSFS=y" >> out/.config
-    echo "CONFIG_KSU_SUSFS_HAS_MAGIC_MOUNT=y" >> out/.config
-    echo "CONFIG_KSU_SUSFS_SUS_PATH=y" >> out/.config
-    echo "CONFIG_KSU_SUSFS_SUS_MOUNT=y" >> out/.config
-    echo "CONFIG_KSU_SUSFS_AUTO_ADD_SUS_KSTAT=y" >> out/.config
-    echo "CONFIG_KSU_SUSFS_AUTO_ADD_SUS_MOUNT=y" >> out/.config
-    echo "CONFIG_KSU_SUSFS_HIDE_KSU_SUSFS_SYMBOLS=y" >> out/.config
-    echo "CONFIG_KSU_MANUAL_HOOK=y" >> out/.config
-    echo "CONFIG_KSU_ALLOWLIST_MODE=y" >> out/.config
-    echo "CONFIG_KSU_VERIFY_SUSFS=y" >> out/.config
-    echo "CONFIG_KSU_SUSFS_SUS_MAPS=y" >> out/.config
-    echo "CONFIG_KSU_SUSFS_SPOOF_UNAME=y" >> out/.config
-    echo "CONFIG_KSU_SUSFS_SUS_PROC_FD_LINK=y" >> out/.config
-    echo "CONFIG_KSU_SUSFS_TRY_UMOUNT=y" >> out/.config
-    echo "CONFIG_KSU_SUSFS_ENABLE_LOG=y" >> out/.config
-
-    # Disable KPM for non-GKI
-    echo "CONFIG_KPM=n" >> out/.config
-
-    # Update config
+    # Update config (resolve dependencies and set defaults)
     make O=out ARCH=arm64 CROSS_COMPILE=aarch64-linux-gnu- oldconfig
 
     cd ..
@@ -207,19 +185,20 @@ build_kernel() {
 
     cd kernel
 
-    # Remove -mgeneral-regs-only and -Werror from all Makefiles (compatibility with newer GCC)
-    find . -type f \( -name "Makefile" -o -name "Kconfig*" -o -name "*.mk" \) -exec sed -i 's/-mgeneral-regs-only//g' {} +
-    find . -type f -name "Makefile" -exec sed -i 's/-Werror//g' {} +
-    find . -type f -name "Makefile" -exec sed -i 's/-Werror-implicit-function-declaration//g' {} +
-    find . -type f -name "Makefile" -exec sed -i 's/-Werror=return-type//g' {} +
-    find . -type f -name "Makefile" -exec sed -i 's/-Werror=implicit-int//g' {} +
-    find . -type f -name "Makefile" -exec sed -i 's/-Werror=strict-prototypes//g' {} +
-    find . -type f -name "Makefile" -exec sed -i 's/-Werror=date-time//g' {} +
-    find . -type f -name "Makefile" -exec sed -i 's/-Werror=incompatible-pointer-types//g' {} +
-    find . -type f -name "Makefile" -exec sed -i 's/-Werror=designated-init//g' {} +
-    find . -type f -name "Makefile" -exec sed -i 's/-Werror=maybe-uninitialized//g' {} +
-    find . -type f -name "Makefile" -exec sed -i 's/-implicit-function-declaration//g' {} +
-    find . -type f -name "Makefile" -exec sed -i 's/--implicit-function-declaration//g' {} +
+    # Remove problematic compiler flags (compatibility with newer GCC)
+    # IMPORTANT: exact-match patterns first, then broad matches, to avoid partial matches
+    find . -name Makefile -exec sed -i \
+        -e 's/-Werror=return-type//g' \
+        -e 's/-Werror=implicit-int//g' \
+        -e 's/-Werror=strict-prototypes//g' \
+        -e 's/-Werror=date-time//g' \
+        -e 's/-Werror=incompatible-pointer-types//g' \
+        -e 's/-Werror=designated-init//g' \
+        -e 's/-Werror=maybe-uninitialized//g' \
+        -e 's/-Werror-implicit-function-declaration//g' \
+        -e 's/-implicit-function-declaration//g' \
+        -e 's/--implicit-function-declaration//g' \
+        -e 's/-mgeneral-regs-only//g' {} +
 
     # Build kernel image
     make -j$(nproc) O=out ARCH=arm64 CROSS_COMPILE=aarch64-linux-gnu- Image.gz dtbs modules

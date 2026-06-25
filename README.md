@@ -7,7 +7,7 @@ Automated builds of **KernelSU + SUSFS** kernel for **OnePlus 8T (kebab)** runni
 ## Features
 
 - **KernelSU**: Built-in mode (v4.1.3)
-- **SUSFS**: Kernel-level root hiding (v1.5.5)
+- **SUSFS**: Kernel-level root hiding (v1.3.8)
 - **Kernel**: 4.19.x (LineageOS 20)
 - **Architecture**: arm64
 
@@ -17,26 +17,17 @@ Automated builds of **KernelSU + SUSFS** kernel for **OnePlus 8T (kebab)** runni
 
 | File | Description | Installation |
 |------|-------------|--------------|
-| `kebab-kernelsu-susfs-a13-4.19-XXXX.zip` | AnyKernel3 package (recommended) | Recovery sideload |
-| `kebab-kernelsu-susfs-a13-4.19-boot-XXXX.zip` | boot.img only | Fastboot flash |
+| `kebab-kernelsu-susfs-a13-4.19-XXXX.zip` | AnyKernel3 package | Recovery sideload |
 
 ### Installation
 
-#### Method 1: AnyKernel3 (Recommended)
-
 1. Download the AnyKernel3 zip
-2. Reboot to Recovery
+2. Reboot to Recovery (hold Power + Volume Up)
 3. Select "Apply update" → "Apply from ADB"
 4. Execute: `adb -d sideload kebab-kernelsu-susfs-a13-4.19-XXXX.zip`
 5. Reboot to system
 
-#### Method 2: Fastboot (Alternative)
-
-1. Download the boot.img package
-2. Extract boot.img
-3. Boot to Fastboot mode
-4. Execute: `fastboot flash boot boot.img`
-5. Reboot to system
+**Note**: After first boot, install **KernelSU Manager** (v4.1.3) from the Play Store or GitHub to manage root access and SUSFS settings.
 
 ## Kernel Features
 

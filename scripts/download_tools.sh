@@ -16,15 +16,12 @@ if [ ! -f "$TOOLS_DIR/magiskboot" ]; then
 fi
 
 # Download busybox (ARM static binary)
+BUSYBOX_VERSION="1.35.0"
+BUSYBOX_URL="https://busybox.net/downloads/binaries/${BUSYBOX_VERSION}-armv6l-busybox-static"
 if [ ! -f "$TOOLS_DIR/busybox" ]; then
-    echo "Downloading busybox..."
-    curl -fsSL -o "$TOOLS_DIR/busybox" \
-        "https://busybox.net/downloads/binaries/1.35.0-armv6l-busybox-static" || {
-        # Fallback: use a mirror
-        curl -fsSL -o "$TOOLS_DIR/busybox" \
-            "https://github.com/termux/termux-packages/files/run/termux-packages-bootstrap-*-arm.zip" || true
-    }
-    chmod +x "$TOOLS_DIR/busybox" 2>/dev/null || true
+    echo "Downloading busybox (${BUSYBOX_VERSION})..."
+    curl -fsSL -o "$TOOLS_DIR/busybox" "$BUSYBOX_URL"
+    chmod +x "$TOOLS_DIR/busybox"
 fi
 
 echo "AnyKernel3 tools ready at: $TOOLS_DIR"

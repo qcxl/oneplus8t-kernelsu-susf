@@ -23,7 +23,7 @@
 #define CMD_SUSFS_UPDATE_SUS_MAPS 0x55561
 #endif
 
-#if LINUX_VERSION_CODE < KERNEL_VERSION(5, 10, 0)
+#ifndef vm_flags_t
 typedef unsigned long vm_flags_t;
 #endif
 

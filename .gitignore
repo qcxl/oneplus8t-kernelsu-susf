@@ -11,29 +11,13 @@
 lineage-20.0-20240209-nightly-kebab-signed/
 extracted_*/
 
-# Kernel build outputs
-kernel/out/
-kernel/arch/
-kernel/include/
-kernel/drivers/
-kernel/fs/
-kernel/net/
-kernel/security/
-kernel/sound/
-kernel/init/
-kernel/ipc/
-kernel/lib/
-kernel/mm/
-kernel/kernel/
-kernel/crypto/
-kernel/block/
-kernel/fs/
-kernel/ipc/
-kernel/lib/
-kernel/mm/
-kernel/kernel/
-kernel/crypto/
-kernel/block/
+# Clone directories
+kernel/
+kernel-su/
+susfs/
+
+# Build output
+output/
 
 # Android NDK
 android-ndk*/
