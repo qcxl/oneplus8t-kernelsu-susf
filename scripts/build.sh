@@ -199,6 +199,12 @@ build_kernel() {
         find out -name Makefile -exec sed -i 's/-Werror//g' {} +
     fi
 
+    # Remove -implicit-function-declaration flag (removed in GCC 11)
+    find . -name Makefile -exec sed -i 's/-implicit-function-declaration//g' {} +
+    if [ -d "out" ]; then
+        find out -name Makefile -exec sed -i 's/-implicit-function-declaration//g' {} +
+    fi
+
     # Also remove problematic -mgeneral-regs-only flag
     find . -name Makefile -exec sed -i 's/-mgeneral-regs-only//g' {} +
     if [ -d "out" ]; then
