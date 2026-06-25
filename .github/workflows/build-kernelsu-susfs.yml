@@ -75,9 +75,9 @@ jobs:
         run: |
           git clone --depth 1 -b builtin https://github.com/SukiSU-Ultra/SukiSU-Ultra.git kernel-su
 
-      - name: Clone SUSFS (kernel-4.19 branch)
+      - name: Clone SUSFS (main branch)
         run: |
-          git clone --depth 1 -b kernel-4.19 https://gitlab.com/simonpunk/susfs4ksu.git susfs
+          git clone --depth 1 -b main https://gitlab.com/simonpunk/susfs4ksu.git susfs
 
       - name: Clone LineageOS 20 kernel source
         run: |
