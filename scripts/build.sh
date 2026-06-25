@@ -304,6 +304,12 @@ EOF
     chmod +x /tmp/ksu-build/bin/aarch64-linux-gnu-gcc
     export PATH="/tmp/ksu-build/bin:$PATH"
 
+    # Remove problematic files that fail to compile
+    # ipa_hw_stats.c fails without visible error messages
+    if [ -f "drivers/platform/msm/ipa/ipa_v3/ipa_hw_stats.c" ]; then
+        sed -i 's/ipa_hw_stats\.o//g' drivers/platform/msm/ipa/ipa_v3/Makefile
+    fi
+
     make -j$(nproc) O=out ARCH=arm64 CROSS_COMPILE=aarch64-linux-gnu- Image.gz dtbs modules
 
     cd ..
