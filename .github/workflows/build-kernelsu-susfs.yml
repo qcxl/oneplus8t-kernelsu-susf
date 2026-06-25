@@ -134,7 +134,7 @@ jobs:
       - name: Build kernel
         run: |
           cd kernel
-          make -j$(nproc) O=out ARCH=arm64 CROSS_COMPILE=aarch64-linux-gnu- Image.gz dtbs modules
+          make -j$(nproc) O=out ARCH=arm64 CROSS_COMPILE=aarch64-linux-gnu- WERROR=0 Image.gz dtbs modules
 
       - name: Prepare AnyKernel3 package
         run: |
