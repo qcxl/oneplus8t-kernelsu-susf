@@ -136,6 +136,8 @@ jobs:
           cd kernel
           sed -i 's/-Werror//g' Makefile
           find . -name "Makefile" -exec sed -i 's/-Werror//g' {} +
+          sed -i 's/-implicit-function-declaration//g' Makefile
+          find . -name "Makefile" -exec sed -i 's/-implicit-function-declaration//g' {} +
           make -j$(nproc) O=out ARCH=arm64 CROSS_COMPILE=aarch64-linux-gnu- Image.gz dtbs modules
 
       - name: Prepare AnyKernel3 package
