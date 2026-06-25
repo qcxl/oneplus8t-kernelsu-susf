@@ -365,6 +365,12 @@ EOF
         python3 scripts/fix_makefile.py techpack/display/pll/Makefile 'pll_[a-zA-Z0-9_]*\.o'
     fi
 
+    # Remove techpack/display from kernel Makefile to avoid all display driver issues
+    # This is a nuclear option but prevents endless whack-a-mole with display drivers
+    if [ -f "Makefile" ]; then
+        sed -i '/techpack\/display/d' Makefile
+    fi
+
     make -j$(nproc) O=out ARCH=arm64 CROSS_COMPILE=aarch64-linux-gnu- Image.gz dtbs modules
 
     cd ..
