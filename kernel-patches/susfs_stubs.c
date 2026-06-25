@@ -120,4 +120,14 @@ int ipa_set_flt_rt_stats(struct ipa_flt_rt_stats *flt_rt_stats)
     return 0;
 }
 
+int ipa_get_flt_rt_stats(struct ipa_flt_rt_stats *flt_rt_stats)
+{
+    return 0;
+}
+
+int ipa_get_teth_stats(struct ipa_teth_stats *teth_stats)
+{
+    return 0;
+}
+
 int ipa_ut_hw_stats_data;
