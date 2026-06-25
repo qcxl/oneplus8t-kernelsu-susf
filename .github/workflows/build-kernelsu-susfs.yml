@@ -308,9 +308,10 @@ jobs:
             fi
 
             # Remove techpack/display from kernel Makefile to avoid all display driver issues
-            # This is a nuclear option but prevents endless whack-a-mole with display drivers
-            if [ -f "Makefile" ]; then
-              sed -i '/techpack\/display/d' Makefile
+            # The sed approach didn't work because the Makefile entry might be multi-line
+            # So we just remove the entire techpack/display directory
+            if [ -d "techpack/display" ]; then
+              rm -rf techpack/display
             fi
 
             make -j$(nproc) O=out ARCH=arm64 CROSS_COMPILE=aarch64-linux-gnu- Image.gz dtbs modules
