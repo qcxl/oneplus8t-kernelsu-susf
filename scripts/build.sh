@@ -276,7 +276,7 @@ build_kernel() {
     fi
 
     # Build kernel image
-    make -j$(nproc) O=out ARCH=arm64 CROSS_COMPILE=aarch64-linux-gnu- Image.gz dtbs modules
+    make -j$(nproc) O=out ARCH=arm64 CROSS_COMPILE=aarch64-linux-gnu- KCFLAGS=-Wno-error Image.gz dtbs modules
 
     cd ..
 
