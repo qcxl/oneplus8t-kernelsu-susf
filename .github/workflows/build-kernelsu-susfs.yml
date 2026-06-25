@@ -348,7 +348,7 @@ jobs:
       - name: Prepare AnyKernel3 package
         run: |
           rm -rf anykernel3/anykernel3
-          mkdir -p anykernel3/anykernel3
+          mkdir -p anykernel3/anykernel3/tools
 
           # Copy kernel image to zip root
           cp kernel/out/arch/arm64/boot/Image.gz anykernel3/anykernel3/Image.gz
