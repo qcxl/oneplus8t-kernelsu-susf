@@ -299,7 +299,7 @@ for arg in "$@"; do
             ;;
     esac
 done
-exec /usr/bin/aarch64-linux-gnu-gcc "${ARGS[@]}" 2>/dev/null || exec /usr/local/bin/aarch64-linux-gnu-gcc "${ARGS[@]}"
+exec /usr/bin/aarch64-linux-gnu-gcc "${ARGS[@]}" || exec /usr/local/bin/aarch64-linux-gnu-gcc "${ARGS[@]}"
 EOF
     chmod +x /tmp/ksu-build/bin/aarch64-linux-gnu-gcc
     export PATH="/tmp/ksu-build/bin:$PATH"
