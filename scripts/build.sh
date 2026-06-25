@@ -193,9 +193,9 @@ build_kernel() {
 
     # Remove problematic compiler flags (compatibility with newer GCC)
     # Use grep to find ALL files containing -Werror, not just Makefiles
-    grep -rl "-Werror" . --include="Makefile" --include="Kbuild" --include="*.mk" 2>/dev/null | xargs sed -i 's/-Werror//g'
+    grep -rl "-Werror" . --include="Makefile" --include="Kbuild" --include="*.mk" 2>/dev/null | xargs -r sed -i 's/-Werror//g'
     if [ -d "out" ]; then
-        grep -rl "-Werror" out --include="Makefile" --include="Kbuild" --include="*.mk" 2>/dev/null | xargs sed -i 's/-Werror//g'
+        grep -rl "-Werror" out --include="Makefile" --include="Kbuild" --include="*.mk" 2>/dev/null | xargs -r sed -i 's/-Werror//g'
     fi
 
     # Remove -implicit-function-declaration flag (removed in GCC 11)
