@@ -98,6 +98,7 @@ jobs:
           # Copy SUSFS compatibility files
           cp ../kernel-patches/susfs_compat.h include/linux/
           cp ../kernel-patches/susfs_compat.c fs/
+          cp ../kernel-patches/susfs_def.h include/linux/
 
           # Add susfs_compat.o to fs/Makefile
           echo 'obj-$(CONFIG_KSU_SUSFS) += susfs_compat.o' >> fs/Makefile
@@ -141,16 +142,17 @@ jobs:
         run: |
           cd kernel
           find . -type f \( -name "Makefile" -o -name "Kconfig*" -o -name "*.mk" \) -exec sed -i 's/-mgeneral-regs-only//g' {} +
-          sed -i 's/-Werror-implicit-function-declaration//g' Makefile
-          sed -i 's/-Werror=return-type//g' Makefile
-          sed -i 's/-Werror=implicit-int//g' Makefile
-          sed -i 's/-Werror=strict-prototypes//g' Makefile
-          sed -i 's/-Werror=date-time//g' Makefile
-          sed -i 's/-Werror=incompatible-pointer-types//g' Makefile
-          sed -i 's/-Werror=designated-init//g' Makefile
-          sed -i 's/-Werror//g' Makefile
-          sed -i 's/-implicit-function-declaration//g' Makefile
-          sed -i 's/--implicit-function-declaration//g' Makefile
+          find . -type f -name "Makefile" -exec sed -i 's/-Werror//g' {} +
+          find . -type f -name "Makefile" -exec sed -i 's/-Werror-implicit-function-declaration//g' {} +
+          find . -type f -name "Makefile" -exec sed -i 's/-Werror=return-type//g' {} +
+          find . -type f -name "Makefile" -exec sed -i 's/-Werror=implicit-int//g' {} +
+          find . -type f -name "Makefile" -exec sed -i 's/-Werror=strict-prototypes//g' {} +
+          find . -type f -name "Makefile" -exec sed -i 's/-Werror=date-time//g' {} +
+          find . -type f -name "Makefile" -exec sed -i 's/-Werror=incompatible-pointer-types//g' {} +
+          find . -type f -name "Makefile" -exec sed -i 's/-Werror=designated-init//g' {} +
+          find . -type f -name "Makefile" -exec sed -i 's/-Werror=maybe-uninitialized//g' {} +
+          find . -type f -name "Makefile" -exec sed -i 's/-implicit-function-declaration//g' {} +
+          find . -type f -name "Makefile" -exec sed -i 's/--implicit-function-declaration//g' {} +
           make -j$(nproc) O=out ARCH=arm64 CROSS_COMPILE=aarch64-linux-gnu- Image.gz dtbs modules
 
       - name: Prepare AnyKernel3 package

@@ -1,7 +1,7 @@
 #ifndef KSU_SUSFS_COMPAT_H
 #define KSU_SUSFS_COMPAT_H
 
-#include <linux/susfs.h>
+#include <linux/version.h>
 
 #ifndef SUSFS_MAGIC
 #define SUSFS_MAGIC 0x53485346
@@ -36,9 +36,18 @@
 #endif
 
 #if LINUX_VERSION_CODE < KERNEL_VERSION(5, 10, 0)
+typedef unsigned long vm_flags_t;
+#endif
+
+#if LINUX_VERSION_CODE < KERNEL_VERSION(5, 10, 0)
 #ifndef fallthrough
 #define fallthrough
 #endif
+#endif
+
+#if LINUX_VERSION_CODE < KERNEL_VERSION(4, 14, 0)
+struct filename;
+struct stat;
 #endif
 
 #endif
