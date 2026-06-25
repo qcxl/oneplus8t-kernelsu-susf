@@ -225,14 +225,41 @@ build_kernel() {
         find out -name Makefile -exec sed -i 's/-mgeneral-regs-only//g' {} +
     fi
 
-    # Fix kernelsu source compatibility issues
+    # Fix kernelsu and SUSFS source compatibility issues
     # 1. Replace 'fallthrough;' with comment (fallthrough macro not in 4.19)
     if [ -f "drivers/kernelsu/policy/allowlist.c" ]; then
         sed -i 's/^[[:space:]]*fallthrough;$/\/\/ fall through/g' drivers/kernelsu/policy/allowlist.c
     fi
-    # 2. Define SUSFS_MAGIC if missing (required by dispatch.c)
-    if [ -f "include/uapi/supercall.h" ] && ! grep -q "SUSFS_MAGIC" include/uapi/supercall.h; then
-        sed -i '/KSU_INSTALL_MAGIC2/a DECLARE(__u32, SUSFS_MAGIC, 0x53555346);' include/uapi/supercall.h
+
+    # 2. Add missing SUSFS headers to files that use SUSFS constants
+    # dispatch.c uses SUSFS_MAGIC and CMD_SUSFS_* but has no includes
+    if [ -f "drivers/kernelsu/supercall/dispatch.c" ] && ! grep -q "susfs.h" drivers/kernelsu/supercall/dispatch.c; then
+        sed -i '1i #include <linux/susfs.h>' drivers/kernelsu/supercall/dispatch.c
+    fi
+    # task_mmu.c uses INODE_STATE_SUS_KSTAT (from SUSFS patch) but no include
+    if [ -f "fs/proc/task_mmu.c" ] && ! grep -q "susfs_def.h" fs/proc/task_mmu.c; then
+        sed -i '1i #include <linux/susfs_def.h>' fs/proc/task_mmu.c
+    fi
+
+    # 3. Add missing SUSFS constants to susfs_def.h
+    if [ -f "include/linux/susfs_def.h" ]; then
+        if ! grep -q "CMD_SUSFS_ADD_SUS_PATH_LOOP" include/linux/susfs_def.h; then
+            echo '#define CMD_SUSFS_ADD_SUS_PATH_LOOP 0x55551' >> include/linux/susfs_def.h
+        fi
+        if ! grep -q "CMD_SUSFS_HIDE_SUS_MNTS_FOR_NON_SU_PROCS" include/linux/susfs_def.h; then
+            echo '#define CMD_SUSFS_HIDE_SUS_MNTS_FOR_NON_SU_PROCS 0x55561' >> include/linux/susfs_def.h
+        fi
+        if ! grep -q "CMD_SUSFS_ADD_SUS_MAP" include/linux/susfs_def.h; then
+            echo '#define CMD_SUSFS_ADD_SUS_MAP 0x55562' >> include/linux/susfs_def.h
+        fi
+        if ! grep -q "CMD_SUSFS_ENABLE_AVC_LOG_SPOOFING" include/linux/susfs_def.h; then
+            echo '#define CMD_SUSFS_ENABLE_AVC_LOG_SPOOFING 0x55563' >> include/linux/susfs_def.h
+        fi
+    fi
+
+    # 4. Add SUSFS_MAGIC to susfs.h (used by dispatch.c for ioctl identification)
+    if [ -f "include/linux/susfs.h" ] && ! grep -q "SUSFS_MAGIC" include/linux/susfs.h; then
+        echo '#define SUSFS_MAGIC 0x53555346' >> include/linux/susfs.h
     fi
 
     # Build kernel image
