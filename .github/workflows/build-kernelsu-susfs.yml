@@ -75,9 +75,9 @@ jobs:
         run: |
           git clone --depth 1 -b builtin https://github.com/SukiSU-Ultra/SukiSU-Ultra.git kernel-su
 
-      - name: Clone SUSFS (main branch)
+      - name: Clone SUSFS (master branch)
         run: |
-          git clone --depth 1 -b main https://gitlab.com/simonpunk/susfs4ksu.git susfs
+          git clone --depth 1 -b master https://gitlab.com/simonpunk/susfs4ksu.git susfs
 
       - name: Clone LineageOS 20 kernel source
         run: |
@@ -94,7 +94,13 @@ jobs:
           # Copy SUSFS source files
           cp ../susfs/kernel_patches/fs/susfs.c fs/
           cp ../susfs/kernel_patches/include/linux/susfs.h include/linux/
-          cp ../susfs/kernel_patches/include/linux/susfs_def.h include/linux/
+
+          # Copy SUSFS compatibility files
+          cp ../kernel-patches/susfs_compat.h include/linux/
+          cp ../kernel-patches/susfs_compat.c fs/
+
+          # Add susfs_compat.o to fs/Makefile
+          echo 'obj-$(CONFIG_KSU_SUSFS) += susfs_compat.o' >> fs/Makefile
 
           # Apply SUSFS compatibility patches
           if [ -f "../susfs/kernel_patches/KernelSU/10_enable_susfs_for_ksu.patch" ]; then

@@ -1,16 +1,44 @@
-#ifndef _SUSFS_COMPAT_H_
-#define _SUSFS_COMPAT_H_
+#ifndef KSU_SUSFS_COMPAT_H
+#define KSU_SUSFS_COMPAT_H
 
-#include <linux/fs.h>
-#include <linux/path.h>
+#include <linux/susfs.h>
 
-/* Stub declarations for missing SUSFS APIs */
-bool susfs_is_current_proc_umounted(struct path *path);
-void susfs_set_current_proc_umounted(struct path *path);
-bool susfs_is_allow_su(struct path *path);
-void ksu_escape_to_root(void);
-void susfs_extra_works(void);
-void ksu_selinux_hide_handle_second_stage(void);
-void ksu_selinux_hide_handle_post_fs_data(void);
+#ifndef SUSFS_MAGIC
+#define SUSFS_MAGIC 0x53485346
+#endif
 
-#endif /* _SUSFS_COMPAT_H_ */
+#ifndef CMD_SUSFS_ADD_SUS_PATH_LOOP
+#define CMD_SUSFS_ADD_SUS_PATH_LOOP 0x5555c
+#endif
+
+#ifndef CMD_SUSFS_HIDE_SUS_MNTS_FOR_NON_SU_PROCS
+#define CMD_SUSFS_HIDE_SUS_MNTS_FOR_NON_SU_PROCS 0x5555d
+#endif
+
+#ifndef CMD_SUSFS_ADD_SUS_MAP
+#define CMD_SUSFS_ADD_SUS_MAP 0x5555e
+#endif
+
+#ifndef CMD_SUSFS_ENABLE_AVC_LOG_SPOOFING
+#define CMD_SUSFS_ENABLE_AVC_LOG_SPOOFING 0x5555f
+#endif
+
+#ifndef CMD_SUSFS_SHOW_ENABLED_FEATURES
+#define CMD_SUSFS_SHOW_ENABLED_FEATURES 0x55560
+#endif
+
+#ifndef CMD_SUSFS_SHOW_VARIANT
+#define CMD_SUSFS_SHOW_VARIANT 0x55561
+#endif
+
+#ifndef CMD_SUSFS_SHOW_VERSION
+#define CMD_SUSFS_SHOW_VERSION 0x55562
+#endif
+
+#if LINUX_VERSION_CODE < KERNEL_VERSION(5, 10, 0)
+#ifndef fallthrough
+#define fallthrough
+#endif
+#endif
+
+#endif
