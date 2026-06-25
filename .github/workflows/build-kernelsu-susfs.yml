@@ -283,6 +283,12 @@ jobs:
               sed -i 's/sde_[a-zA-Z0-9_]*\.o//g' techpack/display/msm/Makefile
             fi
 
+            # Remove ALL dsi_*.o files from Makefile to avoid whack-a-mole
+            # The entire DSI driver has compilation issues with newer GCC
+            if [ -f "techpack/display/msm/dsi/Makefile" ]; then
+              sed -i 's/dsi_[a-zA-Z0-9_]*\.o//g' techpack/display/msm/dsi/Makefile
+            fi
+
             make -j$(nproc) O=out ARCH=arm64 CROSS_COMPILE=aarch64-linux-gnu- Image.gz dtbs modules
 
       - name: Prepare AnyKernel3 package
