@@ -317,7 +317,11 @@ EOF
 
     # sde_crtc.c fails to compile with always_inline error
     if [ -f "techpack/display/msm/sde/sde_crtc.c" ]; then
-        sed -i 's/sde_crtc\.o//g' techpack/display/msm/sde/Makefile
+        if [ -f "techpack/display/msm/sde/Makefile" ]; then
+            sed -i 's/sde_crtc\.o//g' techpack/display/msm/sde/Makefile
+        elif [ -f "techpack/display/msm/Makefile" ]; then
+            sed -i 's/sde_crtc\.o//g' techpack/display/msm/Makefile
+        fi
     fi
 
     make -j$(nproc) O=out ARCH=arm64 CROSS_COMPILE=aarch64-linux-gnu- Image.gz dtbs modules
