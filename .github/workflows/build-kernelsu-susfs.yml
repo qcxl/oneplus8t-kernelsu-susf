@@ -278,18 +278,18 @@ jobs:
             # Remove ALL sde_*.o files from Makefile to avoid whack-a-mole
             # The entire SDE driver has compilation issues with newer GCC
             if [ -f "techpack/display/msm/sde/Makefile" ]; then
-              python3 scripts/fix_makefile.py techpack/display/msm/sde/Makefile 'sde_[a-zA-Z0-9_]*\.o'
+              python3 ../scripts/fix_makefile.py techpack/display/msm/sde/Makefile 'sde_[a-zA-Z0-9_]*\.o'
             elif [ -f "techpack/display/msm/Makefile" ]; then
-              python3 scripts/fix_makefile.py techpack/display/msm/Makefile 'sde_[a-zA-Z0-9_]*\.o'
+              python3 ../scripts/fix_makefile.py techpack/display/msm/Makefile 'sde_[a-zA-Z0-9_]*\.o'
             fi
 
             # Remove ALL dsi_*.o files from Makefile to avoid whack-a-mole
             # The entire DSI driver has compilation issues with newer GCC
             if [ -f "techpack/display/msm/dsi/Makefile" ]; then
-              python3 scripts/fix_makefile.py techpack/display/msm/dsi/Makefile 'dsi_[a-zA-Z0-9_]*\.o'
+              python3 ../scripts/fix_makefile.py techpack/display/msm/dsi/Makefile 'dsi_[a-zA-Z0-9_]*\.o'
             fi
             if [ -f "techpack/display/msm/Makefile" ]; then
-              python3 scripts/fix_makefile.py techpack/display/msm/Makefile 'dsi_[a-zA-Z0-9_]*\.o'
+              python3 ../scripts/fix_makefile.py techpack/display/msm/Makefile 'dsi_[a-zA-Z0-9_]*\.o'
             fi
 
             make -j$(nproc) O=out ARCH=arm64 CROSS_COMPILE=aarch64-linux-gnu- Image.gz dtbs modules
