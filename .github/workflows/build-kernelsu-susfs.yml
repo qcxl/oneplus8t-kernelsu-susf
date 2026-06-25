@@ -134,8 +134,10 @@ jobs:
       - name: Build kernel
         run: |
           cd kernel
-          sed -i 's/-Werror//g' Makefile
-          find . -name "Makefile" -exec sed -i 's/-Werror//g' {} +
+          sed -i 's/-Werror\([^=]\)/-\1/g' Makefile
+          sed -i 's/-Werror$//g' Makefile
+          find . -name "Makefile" -exec sed -i 's/-Werror\([^=]\)/-\1/g' {} +
+          find . -name "Makefile" -exec sed -i 's/-Werror$//g' {} +
           sed -i 's/-implicit-function-declaration//g' Makefile
           find . -name "Makefile" -exec sed -i 's/-implicit-function-declaration//g' {} +
           make -j$(nproc) O=out ARCH=arm64 CROSS_COMPILE=aarch64-linux-gnu- Image.gz dtbs modules
