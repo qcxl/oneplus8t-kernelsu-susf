@@ -324,6 +324,15 @@ EOF
         fi
     fi
 
+    # sde_encoder.c also fails to compile
+    if [ -f "techpack/display/msm/sde/sde_encoder.c" ]; then
+        if [ -f "techpack/display/msm/sde/Makefile" ]; then
+            sed -i 's/sde_encoder\.o//g' techpack/display/msm/sde/Makefile
+        elif [ -f "techpack/display/msm/Makefile" ]; then
+            sed -i 's/sde_encoder\.o//g' techpack/display/msm/Makefile
+        fi
+    fi
+
     make -j$(nproc) O=out ARCH=arm64 CROSS_COMPILE=aarch64-linux-gnu- Image.gz dtbs modules
 
     cd ..
