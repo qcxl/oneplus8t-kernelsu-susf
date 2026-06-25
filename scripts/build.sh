@@ -352,6 +352,11 @@ EOF
         sed -i 's/gf_spi\.o//g' drivers/input/oplus_fp_drivers/goodix_optical_fp/Makefile
     fi
 
+    # goodix_optical_fp/gf_netlink.c references fp_tpinfo from removed gf_spi.c
+    if [ -f "drivers/input/oplus_fp_drivers/goodix_optical_fp/gf_netlink.c" ]; then
+        sed -i 's/gf_netlink\.o//g' drivers/input/oplus_fp_drivers/goodix_optical_fp/Makefile
+    fi
+
     # fsa4480-i2c.c fails to compile with newer GCC (likely always_inline error)
     if [ -f "drivers/soc/qcom/fsa4480-i2c.c" ]; then
         sed -i 's/fsa4480-i2c\.o//g' drivers/soc/qcom/Makefile

@@ -130,4 +130,17 @@ int ipa_get_teth_stats(struct ipa_teth_stats *teth_stats)
     return 0;
 }
 
+int ipa_hw_stats_init(void)
+{
+    return 0;
+}
+
+int ipa_debugfs_init_stats(void)
+{
+    return 0;
+}
+
 int ipa_ut_hw_stats_data;
+
+/* Stub for Goodix fingerprint driver */
+int fp_tpinfo;
