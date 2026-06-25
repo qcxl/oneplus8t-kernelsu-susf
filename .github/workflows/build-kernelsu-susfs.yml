@@ -297,6 +297,8 @@ jobs:
               python3 ../scripts/fix_makefile.py techpack/display/msm/Makefile 'dsi_[a-zA-Z0-9_]*\.o'
               # Also remove msm_drm-y variable which references the removed files
               sed -i 's/msm_drm-y\s*:=\s*/# msm_drm-y := /g' techpack/display/msm/Makefile
+              # Also remove msm_drm.o which depends on msm_drm-y
+              sed -i 's/msm_drm\.o//g' techpack/display/msm/Makefile
             fi
 
             make -j$(nproc) O=out ARCH=arm64 CROSS_COMPILE=aarch64-linux-gnu- Image.gz dtbs modules
