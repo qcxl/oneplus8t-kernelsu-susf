@@ -7,10 +7,15 @@ def fix_makefile(makefile_path, patterns):
         lines = f.readlines()
 
     new_lines = []
-    skip_next = False
+    skip_until_recipe = False
     for i, line in enumerate(lines):
-        if skip_next:
-            skip_next = False
+        if skip_until_recipe:
+            # Skip empty lines and recipe lines until we find a non-recipe line
+            if line.startswith('\t') or line.strip() == '':
+                continue
+            else:
+                skip_until_recipe = False
+                new_lines.append(line)
             continue
 
         # Check if this line matches any of the patterns
@@ -21,9 +26,8 @@ def fix_makefile(makefile_path, patterns):
                 break
 
         if matched:
-            # Check if the next line is a recipe line (starts with tab)
-            if i + 1 < len(lines) and lines[i + 1].startswith('\t'):
-                skip_next = True
+            # Start skipping: skip empty lines and recipe lines
+            skip_until_recipe = True
             continue
 
         new_lines.append(line)
