@@ -191,11 +191,12 @@ build_kernel() {
 
     cd kernel
 
-    # Remove problematic compiler flags (compatibility with newer GCC)
-    # Use grep to find ALL files containing -Werror, not just Makefiles
-    grep -rl "-Werror" . --include="Makefile" --include="Kbuild" --include="*.mk" 2>/dev/null | xargs -r sed -i 's/-Werror//g'
+    # Remove -Werror from ALL files (not just Makefiles) to prevent
+    # GCC from treating warnings as errors. Must apply to BOTH source
+    # and out/ directories because 'make O=out' generates out/ files.
+    grep -rl "-Werror" . 2>/dev/null | xargs -r sed -i 's/-Werror//g'
     if [ -d "out" ]; then
-        grep -rl "-Werror" out --include="Makefile" --include="Kbuild" --include="*.mk" 2>/dev/null | xargs -r sed -i 's/-Werror//g'
+        grep -rl "-Werror" out 2>/dev/null | xargs -r sed -i 's/-Werror//g'
     fi
 
     # Remove -implicit-function-declaration flag (removed in GCC 11)
@@ -210,8 +211,13 @@ build_kernel() {
         find out -name Makefile -exec sed -i 's/-mgeneral-regs-only//g' {} +
     fi
 
-    # Fix kernelsu and SUSFS source compatibility issues
-    # 1. Replace 'fallthrough;' with comment (fallthrough macro not in 4.19)
+    # Fix SUSFS source compatibility issues
+    # 1. Remove non-existent core_hook.h include from sus_su.h
+    if [ -f "include/linux/sus_su.h" ]; then
+        sed -i '/#include.*core_hook.h/d' include/linux/sus_su.h
+    fi
+
+    # 2. Replace 'fallthrough;' with comment (fallthrough macro not in 4.19)
     if [ -f "drivers/kernelsu/policy/allowlist.c" ]; then
         sed -i 's/^[[:space:]]*fallthrough;$/\/\/ fall through/g' drivers/kernelsu/policy/allowlist.c
     fi
