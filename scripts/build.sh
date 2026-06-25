@@ -191,9 +191,23 @@ build_kernel() {
 
     cd kernel
 
-    # Remove -Werror from all Makefiles to prevent GCC from treating
-    # warnings as errors. Must apply to BOTH source and out/ Makefiles
-    # because 'make O=out' generates out/ Makefiles from source.
+    # Remove problematic compiler flags (compatibility with newer GCC)
+    # Step 1: exact-match specific -Werror=xxx patterns to avoid leaving
+    # behind fragments like '=return-type' when using blanket removal
+    find . -name Makefile -exec sed -i \
+        -e 's/-Werror=return-type//g' \
+        -e 's/-Werror=implicit-int//g' \
+        -e 's/-Werror=strict-prototypes//g' \
+        -e 's/-Werror=date-time//g' \
+        -e 's/-Werror=incompatible-pointer-types//g' \
+        -e 's/-Werror=designated-init//g' \
+        -e 's/-Werror=maybe-uninitialized//g' \
+        -e 's/-Werror=unused-variable//g' \
+        -e 's/-Werror=misleading-indentation//g' \
+        -e 's/-Werror=format=//g' \
+        -e 's/-Werror-implicit-function-declaration//g' \
+        {} +
+    # Step 2: blanket removal for any remaining -Werror variants
     find . -name Makefile -exec sed -i 's/-Werror//g' {} +
     if [ -d "out" ]; then
         find out -name Makefile -exec sed -i 's/-Werror//g' {} +
