@@ -192,7 +192,7 @@ build_kernel() {
     cd kernel
 
     # Remove problematic compiler flags (compatibility with newer GCC)
-    # IMPORTANT: exact-match patterns first to avoid partial matches
+    # Step 1: exact-match specific -Werror=xxx patterns first
     find . -name Makefile -exec sed -i \
         -e 's/-Werror=return-type//g' \
         -e 's/-Werror=implicit-int//g' \
@@ -201,10 +201,15 @@ build_kernel() {
         -e 's/-Werror=incompatible-pointer-types//g' \
         -e 's/-Werror=designated-init//g' \
         -e 's/-Werror=maybe-uninitialized//g' \
+        -e 's/-Werror=unused-variable//g' \
+        -e 's/-Werror=misleading-indentation//g' \
+        -e 's/-Werror=format=//g' \
         -e 's/-Werror-implicit-function-declaration//g' \
         -e 's/-implicit-function-declaration//g' \
         -e 's/--implicit-function-declaration//g' \
         -e 's/-mgeneral-regs-only//g' {} +
+    # Step 2: catch-all for any remaining -Werror variants not listed above
+    find . -name Makefile -exec sed -i 's/-Werror//g' {} +
 
     # Build kernel image
     make -j$(nproc) O=out ARCH=arm64 CROSS_COMPILE=aarch64-linux-gnu- Image.gz dtbs modules
