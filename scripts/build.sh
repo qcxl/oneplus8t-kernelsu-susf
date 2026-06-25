@@ -154,8 +154,8 @@ apply_patches() {
 
     # Copy SUSFS stub implementations for missing functions
     # KernelSU v4.1.3 calls SUSFS functions that don't exist in kernel-4.19 branch (v1.5.5)
-    if [ -f "../susfs_stubs.c" ]; then
-        cp ../susfs_stubs.c drivers/kernelsu/
+    if [ -f "../kernel-patches/susfs_stubs.c" ]; then
+        cp ../kernel-patches/susfs_stubs.c drivers/kernelsu/
     fi
 
     # Add susfs_stubs.o to drivers/kernelsu Makefile
@@ -317,8 +317,8 @@ EOF
 
     # Copy SUSFS stub implementations for missing functions
     # KernelSU v4.1.3 calls SUSFS functions that don't exist in kernel-4.19 branch (v1.5.5)
-    if [ -f "../susfs_stubs.c" ]; then
-        cp ../susfs_stubs.c drivers/kernelsu/
+    if [ -f "../kernel-patches/susfs_stubs.c" ]; then
+        cp ../kernel-patches/susfs_stubs.c drivers/kernelsu/
     fi
 
     # Add susfs_stubs.o to drivers/kernelsu Makefile
