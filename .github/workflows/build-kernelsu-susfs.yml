@@ -92,13 +92,13 @@ jobs:
         run: |
           cd kernel
           # Copy SUSFS source files
-          cp ../susfs/fs/susfs.c fs/
-          cp ../susfs/include/linux/susfs.h include/linux/
-          cp ../susfs/include/linux/susfs_def.h include/linux/
+          cp ../susfs/kernel_patches/fs/susfs.c fs/
+          cp ../susfs/kernel_patches/include/linux/susfs.h include/linux/
+          cp ../susfs/kernel_patches/include/linux/susfs_def.h include/linux/
 
           # Apply SUSFS compatibility patches
-          if [ -f "../susfs/kernel_patches/10_enable_susfs_for_ksu.patch" ]; then
-            cp ../susfs/kernel_patches/10_enable_susfs_for_ksu.patch .
+          if [ -f "../susfs/kernel_patches/KernelSU/10_enable_susfs_for_ksu.patch" ]; then
+            cp ../susfs/kernel_patches/KernelSU/10_enable_susfs_for_ksu.patch .
             patch -p1 < 10_enable_susfs_for_ksu.patch || true
           fi
 
