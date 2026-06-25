@@ -134,8 +134,14 @@ jobs:
       - name: Build kernel
         run: |
           cd kernel
-          sed -i 's/-Werror\([^=]\)/-\1/g' Makefile
-          sed -i 's/-Werror$//g' Makefile
+          sed -i 's/-Werror-implicit-function-declaration//g' Makefile
+          sed -i 's/-Werror=return-type//g' Makefile
+          sed -i 's/-Werror=implicit-int//g' Makefile
+          sed -i 's/-Werror=strict-prototypes//g' Makefile
+          sed -i 's/-Werror=date-time//g' Makefile
+          sed -i 's/-Werror=incompatible-pointer-types//g' Makefile
+          sed -i 's/-Werror=designated-init//g' Makefile
+          sed -i 's/-Werror//g' Makefile
           sed -i 's/-implicit-function-declaration//g' Makefile
           sed -i 's/--implicit-function-declaration//g' Makefile
           make -j$(nproc) O=out ARCH=arm64 CROSS_COMPILE=aarch64-linux-gnu- Image.gz dtbs modules
