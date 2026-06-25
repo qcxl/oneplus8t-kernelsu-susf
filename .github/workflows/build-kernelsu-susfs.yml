@@ -107,7 +107,7 @@ jobs:
           cd kernel
 
           # Load default config
-          make O=out ARCH=arm64 CROSS_COMPILE=aarch64-linux-gnu- kebab_defconfig
+          make O=out ARCH=arm64 CROSS_COMPILE=aarch64-linux-gnu- defconfig
 
           # Enable KernelSU
           scripts/kconfig/merge_config.sh -m -O out out/.config kernel-patches/ksu.config || true
