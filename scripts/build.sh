@@ -192,12 +192,18 @@ build_kernel() {
     cd kernel
 
     # Remove -Werror from all Makefiles to prevent GCC from treating
-    # warnings as errors. This is necessary because Ubuntu 22.04's GCC 11
-    # emits many new warnings that the kernel codebase wasn't designed for.
+    # warnings as errors. Must apply to BOTH source and out/ Makefiles
+    # because 'make O=out' generates out/ Makefiles from source.
     find . -name Makefile -exec sed -i 's/-Werror//g' {} +
+    if [ -d "out" ]; then
+        find out -name Makefile -exec sed -i 's/-Werror//g' {} +
+    fi
 
     # Also remove problematic -mgeneral-regs-only flag
     find . -name Makefile -exec sed -i 's/-mgeneral-regs-only//g' {} +
+    if [ -d "out" ]; then
+        find out -name Makefile -exec sed -i 's/-mgeneral-regs-only//g' {} +
+    fi
 
     # Build kernel image
     make -j$(nproc) O=out ARCH=arm64 CROSS_COMPILE=aarch64-linux-gnu- Image.gz dtbs modules
