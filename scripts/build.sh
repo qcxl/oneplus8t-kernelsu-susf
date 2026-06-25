@@ -310,6 +310,11 @@ EOF
         sed -i 's/ipa_hw_stats\.o//g' drivers/platform/msm/ipa/ipa_v3/Makefile
     fi
 
+    # lowmem_dbg.c fails to compile with newer GCC
+    if [ -f "drivers/soc/oplus/lowmem_dbg/lowmem_dbg.c" ]; then
+        sed -i 's/lowmem_dbg\.o//g' drivers/soc/oplus/lowmem_dbg/Makefile
+    fi
+
     make -j$(nproc) O=out ARCH=arm64 CROSS_COMPILE=aarch64-linux-gnu- Image.gz dtbs modules
 
     cd ..
