@@ -223,7 +223,30 @@ jobs:
             ' fs/namespace.c > fs/namespace.c.tmp && mv fs/namespace.c.tmp fs/namespace.c
           fi
 
-          make -j$(nproc) O=out ARCH=arm64 CROSS_COMPILE=aarch64-linux-gnu- KCFLAGS=-Wno-error Image.gz dtbs modules
+          # Build kernel image
+          # Create a compiler wrapper that strips -Werror flags
+          # This is more reliable than trying to remove -Werror from Makefiles
+          # because -Werror can be added dynamically by the build system
+          mkdir -p /tmp/ksu-build/bin
+          cat > /tmp/ksu-build/bin/aarch64-linux-gnu-gcc << 'EOF'
+          #!/bin/bash
+          # Strip -Werror and -Werror=... flags from command line
+          ARGS=()
+          for arg in "$@"; do
+              case "$arg" in
+                  -Werror|-Werror=*)
+                      ;;
+                  *)
+                      ARGS+=("$arg")
+                      ;;
+              esac
+          done
+          exec /usr/bin/aarch64-linux-gnu-gcc "${ARGS[@]}" 2>/dev/null || exec /usr/local/bin/aarch64-linux-gnu-gcc "${ARGS[@]}"
+          EOF
+          chmod +x /tmp/ksu-build/bin/aarch64-linux-gnu-gcc
+          export PATH="/tmp/ksu-build/bin:$PATH"
+
+          make -j$(nproc) O=out ARCH=arm64 CROSS_COMPILE=aarch64-linux-gnu- Image.gz dtbs modules
 
       - name: Prepare AnyKernel3 package
         run: |
