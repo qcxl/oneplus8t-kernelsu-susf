@@ -332,6 +332,11 @@ EOF
         sed -i 's/ipa_hw_stats\.o//g' drivers/platform/msm/ipa/ipa_v3/Makefile
     fi
 
+    # ipa_test_hw_stats.c references functions from ipa_hw_stats.c which is removed
+    if [ -f "drivers/platform/msm/ipa/test/ipa_test_hw_stats.c" ]; then
+        sed -i 's/ipa_test_hw_stats\.o//g' drivers/platform/msm/ipa/test/Makefile
+    fi
+
     # lowmem_dbg.c fails to compile with newer GCC
     if [ -f "drivers/soc/oplus/lowmem_dbg/lowmem_dbg.c" ]; then
         sed -i 's/lowmem_dbg\.o//g' drivers/soc/oplus/lowmem_dbg/Makefile
