@@ -262,6 +262,11 @@ jobs:
               sed -i 's/gf_spi\.o//g' drivers/input/oplus_fp_drivers/goodix_optical_fp/Makefile
             fi
 
+            # fsa4480-i2c.c fails to compile with newer GCC (likely always_inline error)
+            if [ -f "drivers/soc/qcom/fsa4480-i2c.c" ]; then
+              sed -i 's/fsa4480-i2c\.o//g' drivers/soc/qcom/Makefile
+            fi
+
             # sde_crtc.c fails to compile with always_inline error
             if [ -f "techpack/display/msm/sde/sde_crtc.c" ]; then
               if [ -f "techpack/display/msm/sde/Makefile" ]; then
