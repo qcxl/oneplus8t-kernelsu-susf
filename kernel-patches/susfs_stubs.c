@@ -144,3 +144,13 @@ int ipa_ut_hw_stats_data;
 
 /* Stub for Goodix fingerprint driver */
 int fp_tpinfo;
+
+/* Stub for OnePlus sensor driver */
+int register_lcdinfo_notifier(void)
+{
+    return 0;
+}
+
+/* Stub for susfs_extra_works variable referenced from bitops
+ * Needs to be aligned to 8 bytes to avoid relocation errors */
+int susfs_extra_works __aligned(8);
