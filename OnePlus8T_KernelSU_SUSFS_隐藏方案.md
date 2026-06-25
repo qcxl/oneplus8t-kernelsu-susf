@@ -112,16 +112,16 @@
 | 任务 | 状态 | 说明 |
 |:----|:----:|:----|
 | 修正 defconfig | ✅ | `kebab_defconfig` → `vendor/kona-perf_defconfig` |
-| 修正 SUSFS 分支 | ✅ | `kernel-4.19` → `master`，路径匹配 |
-| 修复 SUSFS 兼容层 | ✅ | `susfs_compat.h` / `susfs_compat.c` / `susfs_def.h` |
+| 修正 SUSFS 分支 | ✅ | `master` → `kernel-4.19`（v1.5.5，专为 4.19 内核优化） |
+| 删除 SUSFS 兼容层 | ✅ | `susfs_compat.h/c` 和 `susfs_def.h` 已删除（kernel-4.19 内置） |
 | 修复 CI merge_config 路径 | ✅ | `kernel-patches/ksu.config` → `../kernel-patches/ksu.config` |
-| 修复 download_tools URL | ✅ | `.topjohnwu` → `topjohnwu` |
+| 修复 download_tools URL | ✅ | 移除无效降级 URL，固定 busybox 版本 |
 | 添加 SUSFS 内核集成补丁 | ✅ | `50_add_susfs_in_kernel-4.19.patch` |
 | 修复补丁应用顺序 | ✅ | 50 patch 先于 10 patch |
-| 修复链接顺序 | ✅ | susfs.o 在 susfs_compat.o 之前 |
-| 添加 -Werror 递归删除 | ✅ | 12 条 sed 命令，兼容 GCC 11/12 |
-| 修复 AnyKernel3 打包路径 | ✅ | tools/META-INF 复制 + boot.zip 路径修正 |
-| 启用更多 SUSFS 隐藏能力 | ✅ | SUS_MAPS、SPOOF_UNAME 等已启用 |
+| 修复链接顺序 | ✅ | susfs.o + sus_su.o 按正确顺序添加到 Makefile |
+| 修复 sed 命令顺序 | ✅ | 精确匹配优先，删除裸 `-Werror//g`（修复编译错误） |
+| 修复 AnyKernel3 打包路径 | ✅ | 纯 AK3 格式，移除 META-INF/ramdisk/patch 目录 |
+| 启用更多 SUSFS 隐藏能力 | ✅ | SUS_KSTAT、SPOOF_CMDLINE、OPEN_REDIRECT、AUTO_ADD_* 等 |
 | 修复 AnyKernel3 刷机包 | ✅ | 替换为官方 osm0sis 标准版 |
 | 推送到 GitHub 编译 | ✅ | 已推送，等待 CI 结果 |
 
@@ -192,26 +192,31 @@
 需要在现有配置基础上，增加以下隐藏能力：
 
 ```bash
-# 已有配置（保留）
 CONFIG_KSU=y
 CONFIG_KSU_SUSFS=y
+CONFIG_KSU_MANUAL_HOOK=y
+CONFIG_KSU_ALLOWLIST_MODE=y
+CONFIG_KPM=n
+
+# SUSFS core features
 CONFIG_KSU_SUSFS_HAS_MAGIC_MOUNT=y
 CONFIG_KSU_SUSFS_SUS_PATH=y
 CONFIG_KSU_SUSFS_SUS_MOUNT=y
-CONFIG_KSU_SUSFS_AUTO_ADD_SUS_KSTAT=y
-CONFIG_KSU_SUSFS_AUTO_ADD_SUS_MOUNT=y
+CONFIG_KSU_SUSFS_SUS_KSTAT=y
+CONFIG_KSU_SUSFS_TRY_UMOUNT=y
+CONFIG_KSU_SUSFS_SPOOF_UNAME=y
+CONFIG_KSU_SUSFS_ENABLE_LOG=y
 CONFIG_KSU_SUSFS_HIDE_KSU_SUSFS_SYMBOLS=y
-CONFIG_KSU_MANUAL_HOOK=y
-CONFIG_KSU_ALLOWLIST_MODE=y
-CONFIG_KSU_VERIFY_SUSFS=y
-CONFIG_KPM=n
 
-# 新增：增强隐藏能力
-CONFIG_KSU_SUSFS_SUS_MAPS=y          # 伪造 /proc/self/maps（绕 Momo、Hunter、Luna）
-CONFIG_KSU_SUSFS_SPOOF_UNAME=y       # 伪造内核版本字符串
-CONFIG_KSU_SUSFS_SUS_PROC_FD_LINK=y  # 伪造 /proc/self/fd 符号链接（绕 Holmes）
-CONFIG_KSU_SUSFS_TRY_UMOUNT=y        # 自动卸载隐藏路径的挂载
-CONFIG_KSU_SUSFS_ENABLE_LOG=y        # SUSFS 内核日志（调试用）
+# SUSFS auto-add features
+CONFIG_KSU_SUSFS_AUTO_ADD_SUS_KSU_DEFAULT_MOUNT=y
+CONFIG_KSU_SUSFS_AUTO_ADD_SUS_BIND_MOUNT=y
+CONFIG_KSU_SUSFS_AUTO_ADD_TRY_UMOUNT_FOR_BIND_MOUNT=y
+
+# SUSFS advanced features
+CONFIG_KSU_SUSFS_SUS_OVERLAYFS=n
+CONFIG_KSU_SUSFS_SPOOF_CMDLINE_OR_BOOTCONFIG=y
+CONFIG_KSU_SUSFS_OPEN_REDIRECT=y
 ```
 
 ### 1.2 修复 AnyKernel3 刷机包
@@ -222,8 +227,10 @@ CONFIG_KSU_SUSFS_ENABLE_LOG=y        # SUSFS 内核日志（调试用）
 
 | 文件 | 说明 |
 |:----|:----|
-| `anykernel3/anykernel3/anykernel.sh` | OnePlus 8T 专属刷机配置（设备型号、分区路径等） |
-| `anykernel3/anykernel3/tools/ak3-core.sh` | 官方核心函数库（dump_boot、write_boot 等） |
+| `anykernel3/anykernel.sh` | OnePlus 8T 专属刷机配置（设备型号、分区路径等） |
+| `anykernel3/tools/ak3-core.sh` | 官方核心函数库（dump_boot、write_boot 等） |
+| `anykernel3/tools/magiskboot` | boot 镜像工具（ARM 静态二进制） |
+| `anykernel3/tools/busybox` | POSIX 工具集（ARM 静态二进制） |
 
 #### 1.2.2 修改文件
 
@@ -530,16 +537,17 @@ adb install <检测工具.apk>
 
 | 检测点 | 检测内容 | SUSFS | Shamiko | HMA | LSPosed |
 |:-------|:--------|:-----:|:-------:|:---:|:-------:|
-| /proc/self/maps | 检查 su、ksu 相关映射 | ✅ SUS_MAPS | — | — | — |
+| /proc/self/maps | 检查 su、ksu 相关映射 | ✅ SUS_MOUNT/SUS_KSTAT | — | — | — |
 | /proc/mounts | 检查 magisk/ksu 挂载 | ✅ SUS_MOUNT | — | — | — |
 | /proc/kallsyms | 检查 ksu 内核符号 | ✅ HIDE_SYMBOLS | — | — | — |
 | /proc/version | 检查内核版本 | ✅ SPOOF_UNAME | — | — | — |
-| /proc/self/fd | 检查 zygisk 文件描述符 | ✅ SUS_PROC_FD_LINK | — | — | — |
+| /proc/self/fd | 检查 zygisk 文件描述符 | ✅ SUS_KSTAT | — | — | — |
 | /system/bin/su | 检查 su 二进制文件 | ✅ SUS_PATH | — | — | — |
 | 应用列表 | 检查已安装的 Root 应用 | — | — | ✅ HMA | — |
 | Zygisk 进程 | 检查 zygisk 相关进程 | — | ✅ 隐藏 | — | — |
 | SELinux 状态 | 检查 SELinux 模式 | — | ✅ 伪装 | — | ✅ |
 | Boot 验证 | 检查 boot 镜像签名 | — | — | — | ✅ TrickyStore |
+| /proc/cmdline | 检查内核启动参数 | ✅ SPOOF_CMDLINE | — | — | — |
 
 ---
 
@@ -551,19 +559,15 @@ adb install <检测工具.apk>
 |:----|:--------|:----|
 | SUS_PATH | `CONFIG_KSU_SUSFS_SUS_PATH=y` | 隐藏特定文件/目录路径 |
 | SUS_MOUNT | `CONFIG_KSU_SUSFS_SUS_MOUNT=y` | 隐藏挂载点 |
-| SUS_KSTAT | `CONFIG_KSU_SUSFS_AUTO_ADD_SUS_KSTAT=y` | 自动隐藏文件统计信息 |
+| SUS_KSTAT | `CONFIG_KSU_SUSFS_SUS_KSTAT=y` | 伪装文件统计信息（stat/statfs） |
 | HIDE_SYMBOLS | `CONFIG_KSU_SUSFS_HIDE_KSU_SUSFS_SYMBOLS=y` | 隐藏内核符号 |
-| AUTO_ADD_SUS_MOUNT | `CONFIG_KSU_SUSFS_AUTO_ADD_SUS_MOUNT=y` | 自动添加隐藏挂载 |
-
-### 需要新增的 SUSFS 能力
-
-| 能力 | 内核配置 | 作用 | 对应检测 |
-|:----|:--------|:----|:---------|
-| SUS_MAPS | `CONFIG_KSU_SUSFS_SUS_MAPS=y` | 伪造 /proc/self/maps | Momo、Hunter、Luna、RuRu |
-| SPOOF_UNAME | `CONFIG_KSU_SUSFS_SPOOF_UNAME=y` | 伪造内核版本 | 部分内核版本检测 |
-| SUS_PROC_FD_LINK | `CONFIG_KSU_SUSFS_SUS_PROC_FD_LINK=y` | 伪造 /proc/self/fd | Holmes、密钥认证 |
-| TRY_UMOUNT | `CONFIG_KSU_SUSFS_TRY_UMOUNT=y` | 自动卸载隐藏路径 | 通用增强 |
-| ENABLE_LOG | `CONFIG_KSU_SUSFS_ENABLE_LOG=y` | 内核日志调试 | 调试用 |
+| AUTO_ADD_SUS_KSU_DEFAULT_MOUNT | `CONFIG_KSU_SUSFS_AUTO_ADD_SUS_KSU_DEFAULT_MOUNT=y` | 自动隐藏 KSU 默认挂载 |
+| AUTO_ADD_SUS_BIND_MOUNT | `CONFIG_KSU_SUSFS_AUTO_ADD_SUS_BIND_MOUNT=y` | 自动隐藏 bind 挂载 |
+| TRY_UMOUNT | `CONFIG_KSU_SUSFS_TRY_UMOUNT=y` | 自动卸载隐藏路径 |
+| SPOOF_UNAME | `CONFIG_KSU_SUSFS_SPOOF_UNAME=y` | 伪装内核版本 |
+| SPOOF_CMDLINE | `CONFIG_KSU_SUSFS_SPOOF_CMDLINE_OR_BOOTCONFIG=y` | 伪装 /proc/cmdline |
+| OPEN_REDIRECT | `CONFIG_KSU_SUSFS_OPEN_REDIRECT=y` | 路径打开重定向 |
+| ENABLE_LOG | `CONFIG_KSU_SUSFS_ENABLE_LOG=y` | 内核日志调试 |
 
 ---
 
@@ -747,11 +751,8 @@ su -c "id"
 │   │   ├── magiskboot                              # boot 镜像工具
 │   │   └── busybox                                 # POSIX 工具集
 │   └── modules/                                    # 内核模块（构建后填充）
-├── kernel-patches/                                 # SUSFS 兼容层
-│   ├── ksu.config                                  # KernelSU 配置（单一配置源）
-│   ├── susfs_compat.h                              # SUSFS 兼容头文件
-│   ├── susfs_compat.c                              # SUSFS 兼容源文件
-│   └── susfs_def.h                                 # SUSFS 默认定义
+├── kernel-patches/                                 # 内核配置
+│   └── ksu.config                                  # KernelSU + SUSFS 配置（单一配置源）
 ├── scripts/                                        # 构建脚本
 │   ├── build.sh                                    # 主构建脚本
 │   └── download_tools.sh                           # CI 工具下载脚本
@@ -838,21 +839,23 @@ adb shell ls /data/adb/modules/
 |:-------|:-:|:----|
 | CONFIG_KSU | y | 启用 KernelSU |
 | CONFIG_KSU_SUSFS | y | 启用 SUSFS |
+| CONFIG_KSU_MANUAL_HOOK | y | 手动 Hook（非 GKI 必需） |
+| CONFIG_KSU_ALLOWLIST_MODE | y | AllowList 模式 |
+| CONFIG_KPM | n | 禁用 KPM（非 GKI 设备） |
 | CONFIG_KSU_SUSFS_HAS_MAGIC_MOUNT | y | 支持 Magic Mount |
 | CONFIG_KSU_SUSFS_SUS_PATH | y | 隐藏可疑路径 |
 | CONFIG_KSU_SUSFS_SUS_MOUNT | y | 隐藏可疑挂载 |
-| CONFIG_KSU_SUSFS_AUTO_ADD_SUS_KSTAT | y | 自动添加 kstat 隐藏 |
-| CONFIG_KSU_SUSFS_AUTO_ADD_SUS_MOUNT | y | 自动添加挂载隐藏 |
-| CONFIG_KSU_SUSFS_HIDE_KSU_SUSFS_SYMBOLS | y | 隐藏 KSU/SUSFS 内核符号 |
-| CONFIG_KSU_MANUAL_HOOK | y | 手动 Hook（非 GKI 必需） |
-| CONFIG_KSU_ALLOWLIST_MODE | y | AllowList 模式 |
-| CONFIG_KSU_VERIFY_SUSFS | y | 验证 SUSFS 集成 |
-| CONFIG_KPM | n | 禁用 KPM（非 GKI 设备） |
-| CONFIG_KSU_SUSFS_SUS_MAPS | y | 伪造 /proc/self/maps |
-| CONFIG_KSU_SUSFS_SPOOF_UNAME | y | 伪造内核版本 |
-| CONFIG_KSU_SUSFS_SUS_PROC_FD_LINK | y | 伪造 /proc/self/fd |
-| CONFIG_KSU_SUSFS_TRY_UMOUNT | y | 尝试卸载隐藏路径 |
+| CONFIG_KSU_SUSFS_SUS_KSTAT | y | 伪装文件统计信息 |
+| CONFIG_KSU_SUSFS_TRY_UMOUNT | y | 自动卸载隐藏路径 |
+| CONFIG_KSU_SUSFS_SPOOF_UNAME | y | 伪装内核版本 |
 | CONFIG_KSU_SUSFS_ENABLE_LOG | y | 启用 SUSFS 日志 |
+| CONFIG_KSU_SUSFS_HIDE_KSU_SUSFS_SYMBOLS | y | 隐藏 KSU/SUSFS 内核符号 |
+| CONFIG_KSU_SUSFS_AUTO_ADD_SUS_KSU_DEFAULT_MOUNT | y | 自动隐藏 KSU 默认挂载 |
+| CONFIG_KSU_SUSFS_AUTO_ADD_SUS_BIND_MOUNT | y | 自动隐藏 bind 挂载 |
+| CONFIG_KSU_SUSFS_AUTO_ADD_TRY_UMOUNT_FOR_BIND_MOUNT | y | 自动卸载 bind 挂载 |
+| CONFIG_KSU_SUSFS_SUS_OVERLAYFS | n | OverlayFS 伪装（实验性，关闭） |
+| CONFIG_KSU_SUSFS_SPOOF_CMDLINE_OR_BOOTCONFIG | y | 伪装 /proc/cmdline |
+| CONFIG_KSU_SUSFS_OPEN_REDIRECT | y | 路径打开重定向 |
 
 ---
 
