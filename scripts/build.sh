@@ -262,6 +262,34 @@ build_kernel() {
         echo '#define SUSFS_MAGIC 0x53555346' >> include/linux/susfs.h
     fi
 
+    # Fix SUSFS patch integration issues with kernel 4.19
+    # The 50_add_susfs_in_kernel-4.19.patch may fail to apply cleanly,
+    # leaving namespace.c without required SUSFS definitions.
+
+    # 1. Ensure namespace.c includes susfs_def.h
+    if [ -f "fs/namespace.c" ] && ! grep -q "susfs_def.h" fs/namespace.c; then
+        sed -i '/#include "internal.h"/a \
+#ifdef CONFIG_KSU_SUSFS_SUS_MOUNT\
+#include <linux/susfs_def.h>\
+#endif' fs/namespace.c
+    fi
+
+    # 2. Add missing SUSFS mount ID definitions to namespace.c
+    if [ -f "fs/namespace.c" ] && ! grep -q "susfs_mnt_id_ida" fs/namespace.c; then
+        sed -i '/#include "internal.h"/a \
+\
+#ifdef CONFIG_KSU_SUSFS_SUS_MOUNT\
+extern bool susfs_is_current_ksu_domain(void);\
+extern bool susfs_is_current_zygote_domain(void);\
+\
+static DEFINE_IDA(susfs_mnt_id_ida);\
+static DEFINE_IDA(susfs_mnt_group_ida);\
+\
+#define CL_ZYGOTE_COPY_MNT_NS BIT(24) /* used by copy_mnt_ns() */\
+#define CL_COPY_MNT_NS BIT(25) /* used by copy_mnt_ns() */\
+#endif' fs/namespace.c
+    fi
+
     # Build kernel image
     make -j$(nproc) O=out ARCH=arm64 CROSS_COMPILE=aarch64-linux-gnu- Image.gz dtbs modules
 
